@@ -261,6 +261,22 @@ input::-webkit-datetime-edit-year-field:focus {
 
 /* MOBILE RESPONSIVE
 -------------------------------------------------------------- */
+
+@media (max-width: 1700px) {
+	main {
+		gap: 3rem;
+	}
+
+	.panel {
+		max-width: 380px;
+		flex-basis: 380px;
+	}
+
+	.headline {
+		font-size: 4.5rem;
+	}
+}
+
 @media (max-width: 1449px) {
 	html, body {
 		height: auto;
