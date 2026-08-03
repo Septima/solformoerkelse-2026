@@ -1,0 +1,16 @@
+{
+  "name": "skyggewms-client",
+  "version": "0.0.5",
+  "main": "index.js",
+  "repository": "https://github.com/Septima/widget-template.git",
+  "author": "Karsten Pihl <karsten@septima.dk>",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "http-server html -p 9003 -c-1",
+    "deploy": "yarn version --patch && git push && git push --tags"
+  },
+  "dependencies": {
+    "gh-pages": "6.1.1",
+    "http-server": "14.1.1"
+  }
+}

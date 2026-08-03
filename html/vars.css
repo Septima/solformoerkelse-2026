@@ -1,0 +1,24 @@
+/*  ------------------------------------------------------------------------------------------------ */
+/*  CUSTOM STYLE VARIABLES                                                                           */
+
+@import url("https://use.typekit.net/dqr0gee.css");
+
+:root {
+    --map-scale: 1;
+
+    --sw-font-family: "proxima-nova", arial, sans-serif;
+    --sw-font-size-default: 16px;
+    --sw-border-radius: 8px;
+    --sw-primary: #ffc00e;
+    --sw-container-height: 100%;
+
+    /*  ------------------------------------------------ */
+    /*  MAP                                              */
+    --sw-map-height: 100%;
+
+    /*  ------------------------------------------------ */
+    /*  SEARCH                                           */
+    --sw-search-spacer-left: var(--sw-spacer-xxxl);
+    --sw-search-list-item-padding: 12px 8px;
+
+}

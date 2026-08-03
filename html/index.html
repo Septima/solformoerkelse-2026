@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>  
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Solformørkelse 2026</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700"/>
+        <link rel="stylesheet" href="assets/plugins/roundslider.min.css"/>
+        <link rel="stylesheet" href="map.css"/>
+        <link rel="stylesheet" href="base.css"/>
+        <link rel="stylesheet" href="vars.css"/>
+    </head>
+    <body>
+        <!-- <header>
+            <svg class="part1" width="34" height="33" xmlns="http://www.w3.org/2000/svg">
+                <path d="M.86.3H16.3V13.2c-.63.14-1.2.44-1.65.87l-2.48-2.29-.4.44 2.48 2.28c-.28.36-.48.77-.6 1.22H.85V.3zm0 17.16h12.7c.15.63.45 1.2.87 1.65l-2.28 2.48.43.4 2.28-2.48c.42.32.9.55 1.43.66V32.9H.86V17.46zM17.92.3h15.43v15.43H20.49a3.58 3.58 0 0 0-.81-1.45l2.28-2.47-.43-.4-2.29 2.48c-.38-.3-.83-.52-1.32-.64V.3z" fill="currentColor" fill-rule="evenodd"></path>
+            </svg>
+        </header> -->
+        <main>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <h1 class="headline">Solformørkelse 2026</h1>
+                    <p class="sub">Den 12. august 2026 vil der i tidsrummet kl. 19 til 21 være delvis solformørkelse i hele Danmark. Afhængigt af hvor i landet man befinder sig, vil solen blive formørket 80-88 %. Formørkelsen topper kl. 20:04.</p>
+                    <p class="sub">Tidspunktet betyder, at solen står lavt på himlen, og skyggerne bliver lange. Indtast din adresse og se hvor i dit nabolag, du har mulighed for at se solen</p>
+                    <a href="https://lex.dk/solform%C3%B8rkelsen_den_12._august_2026" target="_blank">Læs mere om solformørkelsen den 12. august 2026</a>
+                </div>
+                <div class="panel-body">
+                    <div data-widget-detach="searchfield" class="searchfield"></div>
+                    <div data-widget-detach="datepicker" class="datepicker">
+                        <div class="datepicker-row">
+                            <label>
+                                <input class="date" type="date" value="2018-11-20" placeholder="I DAG" />
+                            </label>
+                            <label>
+                                <input class="time" type="time" value="20:00" />
+                            </label>
+                        </div>
+                    <div><p class="sub">Husk, at for at se solformørkelsen skal man bruge solformørkelsesbriller...</p></div>
+                    </div>
+                    <button class="btn-fullscreen" id="fullscreen" title="Vis i fuldskærm">
+                        <span class="mdi mdi-fullscreen"></span>
+                    </button>
+
+                    <div class="summary" style="display: none;">
+                        <div class="procent">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="40px" fill="#f3c546"><path d="M480-280q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM73.33-442.12q-16 0-26.94-10.98-10.93-10.97-10.93-27.02 0-16.05 10.93-26.9 10.94-10.86 26.94-10.86h93.34q16 0 26.94 10.98 10.93 10.97 10.93 27.02 0 16.05-10.93 26.9-10.94 10.86-26.94 10.86H73.33Zm720 0q-16 0-26.94-10.98-10.93-10.97-10.93-27.02 0-16.05 10.93-26.9 10.94-10.86 26.94-10.86h93.34q16 0 26.94 10.98 10.93 10.97 10.93 27.02 0 16.05-10.93 26.9-10.94 10.86-26.94 10.86h-93.34ZM479.88-755.46q-16.05 0-26.9-10.93-10.86-10.94-10.86-26.94v-93.34q0-16 10.98-26.94 10.97-10.93 27.02-10.93 16.05 0 26.9 10.93 10.86 10.94 10.86 26.94v93.34q0 16-10.98 26.94-10.97 10.93-27.02 10.93Zm0 720q-16.05 0-26.9-10.93-10.86-10.94-10.86-26.94v-93.34q0-16 10.98-26.94 10.97-10.93 27.02-10.93 16.05 0 26.9 10.93 10.86 10.94 10.86 26.94v93.34q0 16-10.98 26.94-10.97 10.93-27.02 10.93ZM232.15-674.57l-52.34-51.34q-11.35-11.02-10.94-26.92.41-15.9 10.87-27.43 11.21-11.28 27.03-11.28t27.08 11.35l51.58 52.34q10.35 11.27 10.31 26.48-.04 15.2-10.31 26.23-10.52 11.02-26.22 11.09-15.71.07-27.06-10.52Zm494 494.76-51.58-52.34q-10.35-11.27-10.35-26.77 0-15.51 10.69-26.27 10.68-11.35 26.14-11.19 15.45.17 26.8 11.19l52.34 51.1q11.35 11.02 10.94 26.92-.41 15.9-10.87 27.43-11.21 11.28-27.03 11.28t-27.08-11.35Zm-51.34-494.76q-11.35-11.02-11.19-26.48.17-15.45 11.19-26.8l51.1-52.34q11.02-11.35 26.92-10.94 15.9.41 27.43 10.87 11.28 11.21 11.28 27.03t-11.35 27.08l-52.34 51.58q-10.6 10.35-26.05 10.31-15.45-.04-26.99-10.31ZM179.74-179.74q-11.28-11.21-11.28-27.03t11.35-27.08l52.34-51.58q11.14-11.02 26.46-11.02t26.32 11.02q11.61 11.02 11.45 26.48-.17 15.45-11.19 26.8l-51.1 52.34q-11.02 11.35-26.92 10.94-15.9-.41-27.43-10.87Z"/></svg>
+                            <span id="sun-fraction">60%</span>
+                        </div>
+                        <div class="tid">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="40px" fill="#f3c546"><path d="M518.28-495v-156.35q0-15.58-10.34-25.93-10.33-10.35-25.91-10.35-15.57 0-25.94 10.35-10.37 10.35-10.37 25.93v170.46q0 7.54 2.61 14.12 2.61 6.57 7.84 12.49l136.81 140.15q10.74 11.21 26.43 10.88 15.68-.34 26.46-10.88 10.78-10.54 10.78-26.15t-10.78-26.39L518.28-495ZM480.02-73.3q-83.95 0-158.12-32.01-74.18-32-129.38-87.2-55.2-55.19-87.21-129.36Q73.3-396.04 73.3-479.98q0-83.95 32.04-158.14 32.04-74.19 87.19-129.35 55.16-55.15 129.33-87.27 74.18-32.12 158.14-32.12 83.96 0 158.14 32.12 74.17 32.12 129.33 87.27 55.15 55.16 87.27 129.33 32.12 74.18 32.12 158.14 0 83.96-32.12 158.14-32.12 74.17-87.27 129.33-55.16 55.15-129.33 87.19Q563.97-73.3 480.02-73.3Z"/></svg>
+                            <span id="sun-time">7 t. 3 min.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="map-container">
+                <div class="wrapper">
+                    <div class="slider" id="slider"></div>
+                    <div class="map">
+                        <div class="inner-shadow"></div>
+                        <div class="center-point">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M480.2-240Q380-240 310-309.8q-70-69.8-70-170T309.8-650q69.8-70 170-70T650-650.2q70 69.8 70 170T650.2-310q-69.8 70-170 70Z"/></svg>
+                        </div>
+                        <div class="widgetmap"></div>
+                    </div>
+                    <div class="dial">
+                        <object id="rotate-time" type="image/svg+xml" width="820" height="820" data="assets/svgs/urskive.svg"></object>
+                    </div>
+                    <div class="color-fields">
+                        <svg id="pie-chart" width="860" height="860"></svg>
+                        <ul id="pie-values" style="display: none;"></ul>
+                    </div>
+                </div>
+                <div class="clock">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="#f3c546"><path d="M516-510v-174q0-15.3-10.29-25.65Q495.42-720 480.21-720t-25.71 10.35Q444-699.3 444-684v189q0 8 3 14.5t8 11.5l133.85 133.85Q600-324 614.5-324.5 629-325 640-336t11-25.5q0-14.5-11.34-25.75L516-510ZM480-96q-79.38 0-149.19-30T208.5-208.5Q156-261 126-330.96t-30-149.5Q96-560 126-630q30-70 82.5-122t122.46-82q69.96-30 149.5-30t149.55 30.24q70 30.24 121.79 82.08 51.78 51.84 81.99 121.92Q864-559.68 864-480q0 79.38-30 149.19T752-208.5Q700-156 629.87-126T480-96Zm0-384Zm.48 312q129.47 0 220.5-91.5Q792-351 792-480.48q0-129.47-91.02-220.5Q609.95-792 480.48-792 351-792 259.5-700.98 168-609.95 168-480.48 168-351 259.5-259.5T480.48-168Z"/></svg>
+                    <p id="slider-time">12:00</p>
+                </div>
+            </div>
+        </main>
+        <img class="logo" src="assets/images/logo-color-black.png" alt="Septima" />
+    </body>
+</html>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="assets/plugins/roundslider.min.js"></script>
+<script src="scripts/functions.js" type="module"></script>

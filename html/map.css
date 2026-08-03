@@ -1,0 +1,226 @@
+/* GENERAL
+-------------------------------------------------------------- */
+
+.wrapper {
+	width: 960px;
+	display: flex;
+	margin: 0 auto;
+	position: relative;
+}
+
+/* RANGE SLIDER & COLOR FIELDS
+-------------------------------------------------------------- */
+.color-fields, .dial {
+	position: absolute; 
+	top: 0; 
+	left: 0;
+}
+
+.color-fields {
+	z-index: -10;
+	padding: 0 50px; 
+}
+
+.dial {
+	z-index: -9;
+	padding: 20px 70px;
+	opacity: .8;
+}
+
+/* .dial #rotate-time {
+	transform: rotate(-45deg); /* Ændres dynamisk afhængig af Time-value 
+} 
+*/
+
+.pie-chart-value {
+  fill: none;
+  stroke-width: 20;
+}
+
+.slider {
+	z-index: 100;
+	padding: 0;
+	margin: 10px 60px;
+	pointer-events: none; /*NB: Deaktiverer interaktion med slider-path;*/
+	position: relative;
+}
+
+.rs-border {
+    border: 1px solid transparent;
+}
+
+.rs-path-color {
+    background-color: transparent;
+}
+
+.rs-bg-color {
+    background-color: transparent;
+    display: none;
+}
+
+.rs-bar .rs-seperator {
+	position: relative;
+}
+
+.rs-bar.rs-end .rs-seperator, .rs-bar.rs-start .rs-seperator {
+	border-top: 8px solid #114665;
+	margin-top: -1px !important;
+}
+
+.rs-start, .rs-end {
+	z-index: 6 !important;
+}
+
+/* Sun icons */
+.rs-bar.rs-end:before, .rs-bar.rs-start:before, .color-fields:before  {
+	content: " ";
+	background-color: transparent;
+	background-repeat: no-repeat;
+	background-position: center;
+	width: 40px;
+	height: 40px;
+	position: absolute;
+	top: -20px;
+	left: -60px;
+}
+
+.rs-bar.rs-end:before {
+	background-image: url(assets/svgs/solnedgang.svg);
+}
+
+.rs-bar.rs-start:before {
+	background-image: url(assets/svgs/solopgang.svg);
+	transform: rotate(180deg);
+}
+
+.color-fields:before {
+	background-image: url(assets/svgs/nat.svg);
+	width: 30px;
+	height: 30px;
+	top: -38px;
+	left: 50%;
+	margin-left: -15px;
+}
+
+/* Sun beam & handle */
+.rs-handle  {
+	background-color: #fff;
+	background-image: url("assets/svgs/sol-rs-handle.svg");
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 70%;
+	border: none;
+	box-shadow:  0px 0px 60px 10px rgb(255 255 255);
+	animation: sunpulse 2s infinite;
+	z-index: 10;
+	pointer-events: auto;
+}
+
+@-webkit-keyframes sunpulse {
+	0% {
+	  -webkit-box-shadow: 0 0 0 0 rgb(255 221 153 / 60%);
+	}
+	70% {
+		-webkit-box-shadow: 0 0 0 24px rgb(255 221 153 / 0%);
+	}
+	100% {
+		-webkit-box-shadow: 0 0 0 0 rgb(255 221 153 / 0%);
+	}
+  }
+@keyframes pulse {
+	0% {
+	  -moz-box-shadow: 0 0 0 0 rgb(255 221 153 / 60%);
+	  box-shadow: 0 0 0 0 rgb(255 221 153 / 60%);
+	}
+	70% {
+		-moz-box-shadow: rgb(255 221 153 / 0%);
+		box-shadow: rgb(255 221 153 / 0%);
+	}
+	100% {
+		-moz-box-shadow: 0 0 0 0 rgb(255 221 153 / 0%);
+		box-shadow: 0 0 0 0 rgb(255 221 153 / 0%);
+	}
+  }
+
+.shade .rs-handle {
+	background-image: url("assets/svgs/no-sol-rs-handle.svg");
+}
+
+/* Small Handle Chevrons */
+.rs-bar.rs-first:after {
+	content: "";
+	background: url(assets/svgs/handle-chevrons.svg) no-repeat center;
+	width: 76px;
+    height: 76px;
+    position: absolute;
+    top: -38px;
+    left: -27px;
+    transform: rotate(168deg);
+    z-index: 5;
+    opacity: .5;
+}
+
+.rs-handle:before  {
+	display: block;
+    content: " ";
+    border: 110px solid transparent;
+    border-left-color: rgb(255 255 255);
+    position: absolute;
+    left: -110px;
+    bottom: -110px;
+    z-index: -1;
+    transform: rotate(180deg);
+    filter: blur(30px);
+}
+
+.rs-handle-dot:after {
+	border: none;
+	background-color: transparent;
+	border-radius: 0;
+}
+
+/* MASK & MAP
+-------------------------------------------------------------- */
+
+.map {
+	width: 780px;
+	height: 780px;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 1;
+	/* clip-path: url(#myClip);
+	-webkit-clip-path: url(#myClip); */
+	clip-path: circle(50% at 50% 50%);
+	-webkit-clip-path: circle(50% at 50% 50%);
+}
+
+.map .center-point {
+	position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.map .center-point svg {
+	fill: #ffffff;
+	filter: drop-shadow(0px 2px 6px black);
+	outline: 2px solid #fff;
+	border-radius: 50%;
+	outline-offset: -2px;
+}
+
+.inner-shadow {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	z-index: 1;
+	pointer-events: none;
+	/* background: rgba(36,88,121,0.1) url(assets/images/clipshadow.png) no-repeat center; */
+	/* background: linear-gradient(to right, #4f5575, rgb(145 100 0)); */
+	mix-blend-mode: overlay;
+}
+

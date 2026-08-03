@@ -1,0 +1,380 @@
+/* TAGS & RESETS
+-------------------------------------------------------------- */
+
+@import url("https://use.typekit.net/dqr0gee.css");
+
+* { 
+	margin: 0;
+	padding:0; 
+	box-sizing: border-box;
+}
+
+html, body { 
+	height: 100%;
+	height: 100dvh; 
+	overflow: hidden;
+}
+
+body { 
+	background: #114665; 
+	background: linear-gradient(-180deg, #F0F5EF 0%, #F0F5EF 100%);
+	font: 18px/1.5 "proxima-nova", Arial, sans-serif;
+	display: flex;
+	flex-direction: column;
+}
+
+p {
+	color: #111;
+}
+
+a {
+	color: #111;
+}
+
+h1, h2, h3, h4 {
+	color: #111;
+}
+
+input:focus {
+	outline:none;
+}
+
+.headline {
+	font-size: 6rem;
+    line-height: 1;
+    opacity: 0.5;
+    font-weight: 700;
+    letter-spacing: -4px;
+}
+
+.sub {
+	font-size: 1.2rem;	
+	line-height: 1.333;
+}
+
+/* GENERAL
+-------------------------------------------------------------- */
+
+header {
+	flex: 0 0 auto;
+	display: flex;
+}
+
+main {
+	height: 100dvh;
+	flex: 1 1 100%;
+	display: flex;
+	justify-content: center;
+	gap: 8rem;
+}
+
+footer {
+	flex: 0 0 auto;
+	display: flex;
+}
+
+
+/* MAP
+-------------------------------------------------------------- */
+
+.btn-fullscreen {
+	position: fixed;
+    top: 2rem;
+    right: 2rem;
+    appearance: none;
+    background: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    border: 0.15rem solid #ffffff24;
+    padding: 0.75rem;
+    border-radius: 50%;
+}
+
+/* MAP
+-------------------------------------------------------------- */
+
+.map-container {
+	max-width: 960px;
+	position: relative;
+	flex: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 2rem;
+}
+
+.map-container .mask {
+	position: absolute;
+}
+
+/* PANEL
+-------------------------------------------------------------- */
+
+.panel {
+	max-width: 460px;
+	flex: 0 0 460px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 2.5rem;
+}
+
+.panel-header {
+    flex: 0 0 auto;
+	display: flex;
+    flex-direction: column;
+	gap: 2.5rem;
+}
+
+.panel-body {
+	flex: 0 0 auto;
+	display: flex;
+    flex-direction: column;
+	gap: 2.5rem;
+}
+
+/* SEARCHFIELD
+-------------------------------------------------------------- */
+
+.searchfield {
+	position: relative;
+	flex: 0 0 auto;
+}
+
+/* DATEPICKER
+-------------------------------------------------------------- */
+
+.datepicker {
+	flex: 1 1 auto;
+	margin-top: 1rem;
+}
+
+.datepicker-row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.clock {
+	display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+	align-items: center;
+	font-size: 2rem;
+}
+
+/* SUMMARY
+-------------------------------------------------------------- */
+
+.summary {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+	color: #111;
+	font-size: 1.5rem;
+}
+
+.summary div {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+/* DATEPICKER INPUT
+-------------------------------------------------------------- */
+
+input, label {
+	border: none; 
+	-webkit-appearance: none; 
+	appearance: none;
+	background-color: transparent; 
+	font-family: inherit;
+	font-size: inherit;
+}
+
+input.time {
+	display: none;
+}
+
+input.date, 
+input.time {
+	font-size: 2rem;
+	color: #111;
+	border: 0.15rem solid #11111124;
+	cursor: pointer;
+	border-radius: 0.5rem;
+	padding: 0.25rem 0.5rem;
+}
+
+/* Removes the clear button from date and time inputs */
+input[type="date"]::-webkit-clear-button, input[type="time"]::-webkit-clear-button {
+    display: none;
+}
+
+/* Removes the spin button */
+input[type="date"]::-webkit-inner-spin-button, input[type="time"]::-webkit-inner-spin-button { 
+    display: none;
+}
+
+/* Calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+	margin-right: 0.5rem;	
+	fill: #829FB2 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='currentColor'%3e%3cpath d='M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z'/%3e%3c/svg%3e");
+    visibility: visible;
+	filter: none;
+	opacity: 0.4;
+	cursor: pointer;
+}
+
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+	display: inline-block;
+	padding: 0.2rem 0.4rem;
+	transition: all 0.2s ease-in-out;
+}
+
+input[type="date"]:hover::-webkit-datetime-edit-day-field,
+input[type="date"]:focus::-webkit-datetime-edit-day-field,
+input[type="date"]:focus-visible:-webkit-datetime-edit-day-field {
+	background-color: rgb(0 0 0 / 8%);
+	color: #111;
+}
+
+input::-webkit-datetime-edit-day-field:focus,
+input::-webkit-datetime-edit-month-field:focus,
+input::-webkit-datetime-edit-year-field:focus {
+	background-color: #fff !important;
+	color: #333 !important;
+}
+
+.logo {
+	position: fixed;
+	bottom: 1.5rem;
+	right: 1.5rem;
+	height: 2rem;
+	opacity: 0.7;
+}
+
+/* MOBILE RESPONSIVE
+-------------------------------------------------------------- */
+@media (max-width: 1449px) {
+	html, body {
+		height: auto;
+		min-height: 100dvh;
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+
+	main {
+		flex-direction: column;
+		height: auto;
+		min-height: 100dvh;
+		align-items: center;
+		padding: 2rem 1.5rem;
+		gap: 2rem;
+	}
+
+	.panel {
+		flex: 0 0 auto;
+		width: 100%;
+		max-width: 700px;
+	}
+
+	.headline {
+		font-size: 2rem;
+		letter-spacing: -1px;
+	}
+
+	.sub,
+	a {
+		font-size: 0.9rem;
+	}
+
+	.panel {
+		gap: 1rem;
+	}
+
+	.panel-header {
+		gap: 1rem;
+	}
+
+	.panel-body {
+		gap: 1rem;
+	}
+
+	.datepicker {
+		margin-top: 0;
+	}
+
+	.searchfield {
+		min-height: 3.5rem; /* absolut-positioneret widget bidrager ikke til forældrens højde */
+	}
+
+	.map-container {
+		align-self: stretch;
+		overflow: hidden;
+		align-items: center;
+		flex: 0 0 auto;
+	}
+
+	/* Skjul slider og dekorative elementer – vis kun selve kortet */
+	.slider, .dial, .color-fields {
+		display: none;
+	}
+
+	.wrapper {
+		height: 780px; /* eksplicit højde da slider (flow-element) er skjult */
+		zoom: var(--map-scale); /* zoom påvirker layout-størrelse, transform gør ikke */
+		margin: 0; /* nulstil margin: 0 auto fra map.css så align-items: center kan centrere */
+	}
+
+	.logo {
+		bottom: 0.75rem;
+		right: 0.75rem;
+	}
+
+	input.date,
+	input.time {
+		font-size: 1.1rem;
+	}
+
+	input.time {
+		display: block;
+	}
+}
+
+/* WIDGET & STYLES
+-------------------------------------------------------------- */
+
+.widget-container {
+	width: 100%;
+    height: 100%;
+}
+
+.widget-detached > .widget-search {
+	position: absolute;
+	inset: auto 0 auto 0;
+}
+
+.widget-detached > .widget-search ul.better-autocomplete {
+	max-height: 300px !important;
+}
+
+.septimasearch .ssSearchBackground .ssCloseButton,
+.septimasearch .ssSearchBackground .ssFixedText,
+.septimasearch .ssSearchBackground .ssSearchIcon,
+.septimasearch .ssSearchBackground .ssSpinner,
+.septimasearch .ssSearchBackground input.ssInput,
+.septimasearch .ssSearchHeader .ssPromotes,
+.septimasearch .ssSearchHeader .ssPromotes .ssPromotedIcon,
+.septimasearch .ssSearchHeader .ssSearchBackground {
+    height: 3rem !important;
+	font-size: 1rem !important;
+    line-height: 3rem !important;
+    padding-left: 0.6rem !important;
+}
+

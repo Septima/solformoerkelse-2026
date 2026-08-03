@@ -1,0 +1,64 @@
+{
+  "map": {
+    "debug": false,
+    "view": {
+      "zoomLevel": 11,
+      "x": 724282.08,
+      "y": 6178621.15
+    },
+    "mapcontrols": {
+      "dragPan": true,
+      "mouseWheelZoom": true,
+      "keyboardZoom": true,
+      "keyboardPan": true
+    },
+    "layer": [
+      {
+        "id": "vector-kort",
+        "className": "vector-kort",
+        "namedlayer": "#septima_standard",
+        "visible": true
+      },
+      {
+        "id": "skygge-kort",
+        "className": "skygge-kort",
+        "type": "WMS",
+        "host": "https://d2cmj152k49efb.cloudfront.net/v1/wms",
+        "version": "1.1.1",
+        "layername": "skygge",
+        "ratio": 1,
+        "opacity": 0.4,
+        "singleTile": true,
+        "styles": "",
+        "crs": "EPSG:25832",
+        "url": "https://d2cmj152k49efb.cloudfront.net/v1/wms?",
+        "time": {
+          "value": "2024-06-12T12:00",
+          "min": "2024-06-12T00:00",
+          "max": "2024-06-13T00:00"
+        },
+        "visible": true
+      }
+    ],
+    "controls": [
+      {
+        "search": {
+          "detach": "searchfield",
+          "blankBehavior": "search",
+          "displaytext": "Søg adresse",
+
+          "driver": [
+            {
+              "type": "dawa",
+              "minResolution": 0.1,
+              "options": {
+                "showOneStreet": true,
+                "highlightRoad": true
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
