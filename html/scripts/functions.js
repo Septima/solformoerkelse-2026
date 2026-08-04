@@ -329,30 +329,89 @@ function bindEclipseTimeButtons() {
 
 function bindTimeInput() {
   const timeInput = document.getElementById('slider-time');
-  
-  timeInput.addEventListener('change', () => {
-    let time = timeInput.value.trim();
-    
-    // Validate time format (HH:MM)
-    if (!/^\d{1,2}:\d{2}$/.test(time)) {
-      return;
+
+  if (!timeInput) return;
+
+  const normalizeTimeInputValue = (rawValue) => {
+    const trimmed = String(rawValue || '').trim();
+    if (!trimmed) return null;
+
+    const directMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+    let hours;
+    let minutes;
+
+    if (directMatch) {
+      hours = Number.parseInt(directMatch[1], 10);
+      minutes = Number.parseInt(directMatch[2], 10);
+    } else if (/^\d{3,4}$/.test(trimmed)) {
+      // allow bare 4-digit entry like "2000" → "20:00"
+      const digits = trimmed.padStart(4, '0');
+      hours = Number.parseInt(digits.slice(0, 2), 10);
+      minutes = Number.parseInt(digits.slice(2, 4), 10);
+    } else {
+      return null;
     }
-    
-    // Normalize to HH:MM format
-    const [hours, minutes] = time.split(':');
-    const h = parseInt(hours, 10);
-    const m = parseInt(minutes, 10);
-    
-    if (h < 0 || h > 23 || m < 0 || m > 59) {
-      return;
+
+    if (
+      !Number.isInteger(hours)
+      || !Number.isInteger(minutes)
+      || hours < 0
+      || hours > 23
+      || minutes < 0
+      || minutes > 59
+    ) {
+      return null;
     }
-    
-    time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    
-    if (config.latlongCoords) {
-      syncTimeInputToSliderAndClock(time, dateControl.value, config.latlongCoords);
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
+  const sanitizeDraftTimeValue = (rawValue) => {
+    // strip anything that isn't a digit or colon while typing
+    const cleaned = String(rawValue || '').replace(/[^\d:]/g, '');
+    const firstColonIndex = cleaned.indexOf(':');
+
+    if (firstColonIndex === -1) {
+      return cleaned.slice(0, 2);
+    }
+
+    const hours = cleaned.slice(0, firstColonIndex).replace(/:/g, '').slice(0, 2);
+    const minutes = cleaned.slice(firstColonIndex + 1).replace(/:/g, '').slice(0, 2);
+    return `${hours}:${minutes}`;
+  };
+
+  let lastValidTime = normalizeTimeInputValue(timeInput.value) || config.defaultTime;
+  timeInput.value = lastValidTime;
+
+  timeInput.addEventListener('input', () => {
+    const sanitized = sanitizeDraftTimeValue(timeInput.value);
+    if (sanitized !== timeInput.value) {
+      timeInput.value = sanitized;
     }
   });
+
+  const commitTimeChange = () => {
+    const normalized = normalizeTimeInputValue(timeInput.value);
+
+    if (!normalized) {
+      // revert to last known good value
+      timeInput.value = lastValidTime;
+      return;
+    }
+
+    timeInput.value = normalized;
+
+    if (normalized === lastValidTime) return;
+
+    lastValidTime = normalized;
+
+    if (config.latlongCoords) {
+      syncTimeInputToSliderAndClock(normalized, dateControl.value, config.latlongCoords);
+    }
+  };
+
+  timeInput.addEventListener('change', commitTimeChange);
+  timeInput.addEventListener('blur', commitTimeChange);
 }
 
 function renderEclipseInfo(eclipse) {
@@ -801,6 +860,18 @@ jQuery(document).ready(($) => {
       updateSliderTimeFromValue(e.value, dateControl, config.latlongCoords); // horribly inefficient since there's so much calculation it doesn't need to do
     }
 	});
+
+  // getBoundingClientRect gives rendered (zoomed) dimensions; outerWidth/Height does not — fix the mismatch.
+  const rsInstance = $("#slider").data("roundSlider");
+  if (rsInstance) {
+    rsInstance._getCenterPoint = function () {
+      const rect = this.block[0].getBoundingClientRect();
+      return {
+        x: rect.left + window.scrollX + rect.width / 2,
+        y: rect.top + window.scrollY + rect.height / 2,
+      };
+    };
+  }
 
   // Rotate color fields according to natValue
   $("#pie-chart").css({'transform' : 'rotate('+ (sunDegrees + config.sliderOffset + config.rotationAdjustment) +'deg)'}); // + 180 to flip it to correct side, + 45 due to the offset

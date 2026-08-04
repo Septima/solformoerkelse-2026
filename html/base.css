@@ -601,7 +601,7 @@ input::-webkit-datetime-edit-year-field:focus {
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 40;
+		z-index: 3000;
 		display: block;
 		width: 100%;
 		padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1.5rem 0.75rem;

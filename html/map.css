@@ -132,6 +132,7 @@
 
 /* Sun beam & handle */
 .rs-handle  {
+	touch-action: none; /* let JS own this element's touch, prevent browser scroll/zoom from intercepting */
 	background-color: #fff;
 	background-image: url("assets/svgs/sol-rs-handle.svg");
 	background-repeat: no-repeat;
