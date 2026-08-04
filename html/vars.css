@@ -5,10 +5,21 @@
 
 :root {
     --map-scale: 1;
+    --map-wrapper-size: 960px;
+    --map-size: 780px;
+    --map-pie-size: 860px;
+    --map-pie-radius: 410px;
+    --map-slider-radius: 420;
+    --map-slider-inset-x: 60px;
+    --map-slider-inset-y: 60px;
+    --map-dial-inset-x: 70px;
+    --map-dial-inset-y: 70px;
+    --map-color-inset-x: 50px;
+    --map-top-overflow: 40px;
 
     --sw-font-family: "proxima-nova", arial, sans-serif;
     --sw-font-size-default: 16px;
-    --sw-border-radius: 8px;
+    --sw-border-radius: 12px;
     --sw-primary: #ffc00e;
     --sw-container-height: 100%;
 

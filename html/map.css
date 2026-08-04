@@ -2,10 +2,12 @@
 -------------------------------------------------------------- */
 
 .wrapper {
-	width: 960px;
+	width: var(--map-wrapper-size);
+	height: var(--map-wrapper-size);
 	display: flex;
 	margin: 0 auto;
 	position: relative;
+	zoom: var(--map-scale);
 }
 
 /* RANGE SLIDER & COLOR FIELDS
@@ -14,17 +16,51 @@
 	position: absolute; 
 	top: 0; 
 	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.slider {
+	position: absolute;
+	inset: var(--map-slider-inset-y) var(--map-slider-inset-x);
+	z-index: 100;
+	padding: 0;
+	margin: 0;
+	pointer-events: none; /*NB: Deaktiverer interaktion med slider-path;*/
 }
 
 .color-fields {
 	z-index: -10;
-	padding: 0 50px; 
+	padding: 0;
 }
 
 .dial {
-	z-index: -9;
-	padding: 20px 70px;
-	opacity: .8;
+	z-index: 9;
+	padding: calc(var(--map-dial-inset-y) - 0.5px) calc(var(--map-dial-inset-x) - 0.5px);
+	opacity: 1;
+	pointer-events: none;
+}
+
+.dial object,
+
+.dial object {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.color-fields svg {
+	position: absolute;
+	width: var(--map-pie-size);
+	height: var(--map-pie-size);
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: auto;
+	display: block;
+	transform-origin: 50% 50%;
+	transform-box: fill-box;
 }
 
 /* .dial #rotate-time {
@@ -35,14 +71,6 @@
 .pie-chart-value {
   fill: none;
   stroke-width: 20;
-}
-
-.slider {
-	z-index: 100;
-	padding: 0;
-	margin: 10px 60px;
-	pointer-events: none; /*NB: Deaktiverer interaktion med slider-path;*/
-	position: relative;
 }
 
 .rs-border {
@@ -97,7 +125,7 @@
 	background-image: url(assets/svgs/nat.svg);
 	width: 30px;
 	height: 30px;
-	top: -38px;
+	top: calc(50% - (var(--map-pie-size) / 2) - var(--map-top-overflow));
 	left: 50%;
 	margin-left: -15px;
 }
@@ -127,7 +155,7 @@
 		-webkit-box-shadow: 0 0 0 0 rgb(255 221 153 / 0%);
 	}
   }
-@keyframes pulse {
+@keyframes sunpulse {
 	0% {
 	  -moz-box-shadow: 0 0 0 0 rgb(255 221 153 / 60%);
 	  box-shadow: 0 0 0 0 rgb(255 221 153 / 60%);
@@ -158,6 +186,7 @@
     transform: rotate(168deg);
     z-index: 5;
     opacity: .5;
+	pointer-events: none;
 }
 
 .rs-handle:before  {
@@ -171,6 +200,13 @@
     z-index: -1;
     transform: rotate(180deg);
     filter: blur(30px);
+	pointer-events: none;
+}
+
+.rs-bar.rs-end:before,
+.rs-bar.rs-start:before,
+.color-fields:before {
+	pointer-events: none;
 }
 
 .rs-handle-dot:after {
@@ -183,8 +219,8 @@
 -------------------------------------------------------------- */
 
 .map {
-	width: 780px;
-	height: 780px;
+	width: var(--map-size);
+	height: var(--map-size);
 	position: absolute;
 	top: 50%;
 	left: 50%;
@@ -207,6 +243,7 @@
 
 .map .center-point svg {
 	fill: #ffffff;
+	display: block;
 	filter: drop-shadow(0px 2px 6px black);
 	outline: 2px solid #fff;
 	border-radius: 50%;

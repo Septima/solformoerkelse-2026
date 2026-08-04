@@ -4,8 +4,10 @@
     "view": {
       "zoomLevel": 11,
       "x": 724282.08,
-      "y": 6178621.15
+      "y": 6178621.15,
+      "maxExtent": [-200000, 5600000, 1600000, 7200000]
     },
+    "fullscreen": false,
     "mapcontrols": {
       "dragPan": true,
       "mouseWheelZoom": true,
@@ -41,6 +43,18 @@
       }
     ],
     "controls": [
+      {
+        "location": {
+          "zoom": 11,
+          "detach": "locateme",
+          "onStart": false,
+          "onClick": true,
+          "disable": false,
+          "zoomOptions": {
+            "zoomStyle": "faster"
+          }
+        }
+      },
       {
         "search": {
           "detach": "searchfield",
