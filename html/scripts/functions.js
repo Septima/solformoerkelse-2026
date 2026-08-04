@@ -1,33 +1,421 @@
 const { default: SunCalc } = await import('https://cdn.skypack.dev/suncalc@1.8.0');
 const { default: WidgetAPI } = await import('https://widget.cdn.septima.dk/latest/widgetapi.mjs')
+
+let SolarEclipse = null;
+let Catalogue = null;
+let Location = null;
+
+async function loadAstronomyBundleEclipse() {
+  // This app runs as static browser ESM, so use CDN modules directly.
+  const [solarEclipseMod, catalogueMod, coreMod] = await Promise.all([
+    import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/solar-eclipse/+esm'),
+    import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/solar-eclipse/catalogue/+esm'),
+    import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/core/+esm'),
+  ]);
+
+  SolarEclipse = solarEclipseMod.SolarEclipse;
+  Catalogue = catalogueMod.Catalogue;
+  Location = coreMod.Location;
+}
+
+await loadAstronomyBundleEclipse();
+
 const mapConfigUrl = new URL('./config/map.json', document.baseURI).href;
 const widget = new WidgetAPI('.widgetmap', mapConfigUrl)
 
+function getCssPxVar(name, fallback) {
+  const value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+const mapWrapperSize = getCssPxVar('--map-wrapper-size', 960);
+const mapPieSize = getCssPxVar('--map-pie-size', 860);
+const mapPieRadius = getCssPxVar('--map-pie-radius', 410);
+const mapSliderRadius = getCssPxVar('--map-slider-radius', 420);
 
 const config = {
-  radius: 410,
+  radius: mapPieRadius,
+  pieCenter: mapPieSize / 2,
+  wrapperSize: mapWrapperSize,
+  sliderRadius: mapSliderRadius,
+  sliderStep: 0.05,
   latlongCoords: [12.539792090268461, 55.70698126629835], // Rådhuspladsen coordinates for initial view. Beware that im not sure the coordinates are in the correct order
   sliderOffset: 45, // The slider is turned by 45 degress so we add this to account for the offset
   rotationAdjustment: 180, // Not entirely sure why, but the rotation is usually flipped, so we need to turn it 180 deg. to re-flip it
-  circleLength: Math.PI * (410 * 2), // Circumference
+  circleLength: Math.PI * (mapPieRadius * 2), // Circumference
   defaultDate: '2026-08-12',
   defaultTime: '20:00', // Lokal dansk tid for solformørkelsens toppunkt
   mapCenter: [724282.08, 6178621.15], // EPSG:25832
   mapZoom: 11,
 };
 
+function formatMinutesToClock(totalMinutes) {
+  const normalizedMinutes = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalizedMinutes / 60);
+  const minutes = normalizedMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+const danishTimeFormatter = new Intl.DateTimeFormat('da-DK', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+  timeZone: 'Europe/Copenhagen',
+});
+
+const eclipseCache = new Map();
+
+function timeOfInterestToDate(toi) {
+  if (!toi) return null;
+
+  if (typeof toi.getDate === 'function') {
+    const value = toi.getDate();
+    if (value instanceof Date) return value;
+  }
+
+  if (typeof toi.toDate === 'function') {
+    const value = toi.toDate();
+    if (value instanceof Date) return value;
+  }
+
+  if (typeof toi.getTime === 'function') {
+    const time = toi.getTime();
+    if (time && Number.isFinite(time.year)) {
+      const sec = Number.isFinite(time.sec) ? time.sec : 0;
+      const seconds = Math.floor(sec);
+      const ms = Math.round((sec - seconds) * 1000);
+      return new Date(Date.UTC(time.year, (time.month || 1) - 1, time.day || 1, time.hour || 0, time.min || 0, seconds, ms));
+    }
+  }
+
+  return null;
+}
+
+function formatDateToDanishClock(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+
+  // formatToParts avoids locale separators like '.' and guarantees HH:MM:SS.
+  const parts = danishTimeFormatter.formatToParts(date);
+  const hour = parts.find((part) => part.type === 'hour')?.value;
+  const minute = parts.find((part) => part.type === 'minute')?.value;
+  const second = parts.find((part) => part.type === 'second')?.value;
+
+  if (!hour || !minute || !second) return null;
+  return `${hour}:${minute}:${second}`;
+}
+
+function parseLocalClockToParts(localTimeStr) {
+  const [rawH, rawM, rawS] = localTimeStr.split(':');
+  const hours = Number(rawH);
+  const minutes = Number(rawM);
+  const seconds = Number(rawS ?? 0);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) {
+    return null;
+  }
+
+  return { hours, minutes, seconds };
+}
+
+function parseLocalClockToSeconds(localTimeStr) {
+  const parts = parseLocalClockToParts(localTimeStr);
+  if (!parts) return null;
+  return (parts.hours * 3600) + (parts.minutes * 60) + parts.seconds;
+}
+
+function circleOverlapArea(radius1, radius2, separation) {
+  if (separation >= radius1 + radius2) return 0;
+
+  if (separation <= Math.abs(radius1 - radius2)) {
+    const minRadius = Math.min(radius1, radius2);
+    return Math.PI * minRadius * minRadius;
+  }
+
+  const r1sq = radius1 * radius1;
+  const r2sq = radius2 * radius2;
+  const alpha = Math.acos((separation * separation + r1sq - r2sq) / (2 * separation * radius1));
+  const beta = Math.acos((separation * separation + r2sq - r1sq) / (2 * separation * radius2));
+  const part1 = r1sq * alpha;
+  const part2 = r2sq * beta;
+  const part3 = 0.5 * Math.sqrt(
+    (-separation + radius1 + radius2)
+    * (separation + radius1 - radius2)
+    * (separation - radius1 + radius2)
+    * (separation + radius1 + radius2)
+  );
+
+  return part1 + part2 - part3;
+}
+
+function solveSeparationForObscuration(radius1, radius2, obscuration) {
+  if (!Number.isFinite(obscuration) || obscuration <= 0) {
+    return radius1 + radius2;
+  }
+
+  const sunArea = Math.PI * radius1 * radius1;
+  const targetArea = Math.max(0, Math.min(1, obscuration)) * sunArea;
+
+  let low = Math.abs(radius1 - radius2);
+  let high = radius1 + radius2;
+
+  for (let i = 0; i < 26; i += 1) {
+    const mid = (low + high) / 2;
+    const area = circleOverlapArea(radius1, radius2, mid);
+    if (area > targetArea) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return (low + high) / 2;
+}
+
+function updateEclipsePreview(eclipse, localTimeStr) {
+  const moonNode = document.getElementById('eclipse-preview-moon');
+  if (!moonNode) return;
+
+  const hasEclipse = Boolean(
+    eclipse
+    && eclipse.type !== 'none'
+    && Number.isFinite(eclipse.obscurationPct)
+    && eclipse.obscurationPct > 0
+  );
+
+  if (!hasEclipse) {
+    moonNode.style.opacity = '0';
+    moonNode.style.transform = 'translate(140%, 0)';
+    return;
+  }
+
+  moonNode.style.opacity = '1';
+
+  const startSec = parseLocalClockToSeconds(eclipse?.startLocal || '');
+  const peakSec = parseLocalClockToSeconds(eclipse?.peakLocal || '');
+  const endSec = parseLocalClockToSeconds(eclipse?.endLocal || '');
+  const currentSec = parseLocalClockToSeconds(localTimeStr || '');
+
+  if (
+    !Number.isFinite(startSec)
+    || !Number.isFinite(peakSec)
+    || !Number.isFinite(endSec)
+    || !Number.isFinite(currentSec)
+    || endSec <= startSec
+  ) {
+    moonNode.style.transform = 'translate(140%, 0)';
+    return;
+  }
+
+  const sunRadius = 1;
+  const moonRatio = Number.isFinite(eclipse.maxMoonSunRatio) ? eclipse.maxMoonSunRatio : 1;
+  const moonRadius = Math.max(0.7, Math.min(1.25, moonRatio));
+  const edgeDistance = sunRadius + moonRadius;
+
+  const maxObscuration = Math.max(0, Math.min(1, (eclipse.obscurationPct || 0) / 100));
+  const minSeparationAtPeak = solveSeparationForObscuration(sunRadius, moonRadius, maxObscuration);
+  const yOffset = Math.min(minSeparationAtPeak, edgeDistance * 0.92);
+  const xAtContact = Math.sqrt(Math.max(0, (edgeDistance * edgeDistance) - (yOffset * yOffset)));
+
+  let x = xAtContact;
+  if (peakSec > startSec && currentSec <= peakSec) {
+    // Move from first contact toward center and keep moving rightward before contact.
+    const prePeakSlope = -xAtContact / (peakSec - startSec);
+    x = xAtContact + ((currentSec - startSec) * prePeakSlope);
+  } else if (endSec > peakSec) {
+    // Move from center toward last contact and keep moving leftward after contact.
+    const postPeakSlope = -xAtContact / (endSec - peakSec);
+    x = (currentSec - peakSec) * postPeakSlope;
+  }
+
+  const xPercent = (x / edgeDistance) * 100;
+  const yPercent = -(yOffset / edgeDistance) * 35;
+  moonNode.style.transform = `translate(${xPercent}%, ${yPercent}%)`;
+}
+
+function getCurrentPreviewTime() {
+  return (document.getElementById('slider-time')?.value || '').trim();
+}
+
+function getSolarEclipseByDateAndLngLat(dateStr, lngLat) {
+  const [lng, lat] = lngLat;
+  const key = `${dateStr}::${lat.toFixed(6)}::${lng.toFixed(6)}`;
+
+  if (eclipseCache.has(key)) {
+    return eclipseCache.get(key);
+  }
+
+  try {
+    const elements = Catalogue.getBesselianElements(dateStr);
+    const eclipse = SolarEclipse.createFromBesselianElements(elements);
+    const location = Location.create(lat, lng, 0);
+    const localEclipse = eclipse.getLocalEclipse(location);
+    const contacts = localEclipse.getContactTimes();
+
+    const c1 = timeOfInterestToDate(contacts.c1);
+    const max = timeOfInterestToDate(contacts.max);
+    const c4 = timeOfInterestToDate(contacts.c4);
+
+    const startLocal = formatDateToDanishClock(c1);
+    const peakLocal = formatDateToDanishClock(max);
+    const endLocal = formatDateToDanishClock(c4);
+
+    const startMinutes = startLocal ? parseInt(startLocal.slice(0, 2), 10) * 60 + parseInt(startLocal.slice(3, 5), 10) : null;
+    const peakMinutes = peakLocal ? parseInt(peakLocal.slice(0, 2), 10) * 60 + parseInt(peakLocal.slice(3, 5), 10) : null;
+    const endMinutes = endLocal ? parseInt(endLocal.slice(0, 2), 10) * 60 + parseInt(endLocal.slice(3, 5), 10) : null;
+
+    const result = {
+      date: dateStr,
+      startLocal,
+      peakLocal,
+      endLocal,
+      obscurationPct: Number((localEclipse.getMaxObscuration() * 100).toFixed(2)),
+      maxMoonSunRatio: localEclipse.getMaxMoonSunRatio(),
+      startMinutes,
+      peakMinutes,
+      endMinutes,
+      type: localEclipse.getType(),
+    };
+
+    eclipseCache.set(key, result);
+    return result;
+  } catch (error) {
+    console.warn('No solar eclipse data found for date/location.', dateStr, lngLat, error);
+    const result = {
+      date: dateStr,
+      startLocal: null,
+      peakLocal: null,
+      endLocal: null,
+      obscurationPct: 0,
+      maxMoonSunRatio: null,
+      startMinutes: null,
+      peakMinutes: null,
+      endMinutes: null,
+      type: 'none',
+    };
+    eclipseCache.set(key, result);
+    return result;
+  }
+}
+
+function getSolarEclipse2026ForLngLat(lngLat) {
+  return getSolarEclipseByDateAndLngLat(config.defaultDate, lngLat);
+}
+
+// window.getSolarEclipse2026ForLngLat = getSolarEclipse2026ForLngLat;
+
+function getEclipseTimeByTarget(eclipse, target) {
+  if (!eclipse) return null;
+  if (target === 'start') return eclipse.startLocal;
+  if (target === 'peak') return eclipse.peakLocal;
+  if (target === 'end') return eclipse.endLocal;
+  return null;
+}
+
+function bindEclipseTimeButtons() {
+  const buttons = document.querySelectorAll('.eclipse-time-btn');
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const target = button.dataset.eclipseTarget;
+      const eclipse = config.eclipse;
+      const localTime = getEclipseTimeByTarget(eclipse, target);
+      if (!localTime) return;
+
+      syncTimeInputToSliderAndClock(localTime, dateControl.value, config.latlongCoords);
+    });
+  });
+}
+
+function bindTimeInput() {
+  const timeInput = document.getElementById('slider-time');
+  
+  timeInput.addEventListener('change', () => {
+    let time = timeInput.value.trim();
+    
+    // Validate time format (HH:MM)
+    if (!/^\d{1,2}:\d{2}$/.test(time)) {
+      return;
+    }
+    
+    // Normalize to HH:MM format
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours, 10);
+    const m = parseInt(minutes, 10);
+    
+    if (h < 0 || h > 23 || m < 0 || m > 59) {
+      return;
+    }
+    
+    time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    
+    if (config.latlongCoords) {
+      syncTimeInputToSliderAndClock(time, dateControl.value, config.latlongCoords);
+    }
+  });
+}
+
+function renderEclipseInfo(eclipse) {
+  const startNode = document.getElementById('eclipse-start');
+  const peakNode = document.getElementById('eclipse-peak');
+  const endNode = document.getElementById('eclipse-end');
+  const percentageNode = document.getElementById('eclipse-percentage');
+  const startButton = document.querySelector('.eclipse-time-btn[data-eclipse-target="start"]');
+  const peakButton = document.querySelector('.eclipse-time-btn[data-eclipse-target="peak"]');
+  const endButton = document.querySelector('.eclipse-time-btn[data-eclipse-target="end"]');
+
+  if (!startNode || !peakNode || !endNode || !percentageNode) return;
+
+  startNode.innerText = eclipse.startLocal || '--:--';
+  peakNode.innerText = eclipse.peakLocal || '--:--';
+  endNode.innerText = eclipse.endLocal || '--:--';
+
+  if (startButton) startButton.disabled = !eclipse.startLocal;
+  if (peakButton) peakButton.disabled = !eclipse.peakLocal;
+  if (endButton) endButton.disabled = !eclipse.endLocal;
+
+  if (Number.isFinite(eclipse.obscurationPct) && eclipse.obscurationPct > 0) {
+    percentageNode.innerText = `${eclipse.obscurationPct.toFixed(2)}%`;
+  } else {
+    percentageNode.innerText = '--.-%';
+  }
+
+  updateEclipsePreview(eclipse, getCurrentPreviewTime());
+}
+
+function updateEclipseEstimateForCurrentLocation() {
+  const eclipse = getSolarEclipseByDateAndLngLat(config.defaultDate, config.latlongCoords);
+  config.eclipse = eclipse;
+  renderEclipseInfo(eclipse);
+  console.log('Eclipse estimate for location:', config.latlongCoords, eclipse);
+  return eclipse;
+}
+
 
 function setMapScale() {
-  const available = window.innerWidth - 48; // 48px accounts for 1.5rem padding on each side
-  // On mobile the slider is hidden, so scale against the 780px map diameter instead of the 960px wrapper
-  const reference = window.innerWidth < 1450 ? 780 : 960;
-  document.documentElement.style.setProperty('--map-scale', Math.min(1, available / reference));
+  const mapContainer = document.querySelector('.map-container');
+  if (!mapContainer) return;
+
+  const isStackedLayout = window.matchMedia('(max-width: 1449px)').matches;
+  const widthScale = mapContainer.clientWidth / config.wrapperSize;
+
+  let targetScale = widthScale;
+
+  if (!isStackedLayout) {
+    const clock = document.querySelector('.clock');
+    const gap = parseFloat(getComputedStyle(mapContainer).gap) || 0;
+    const topOverflow = getCssPxVar('--map-top-overflow', 20);
+    const availableHeight = mapContainer.clientHeight - (clock?.offsetHeight || 0) - gap;
+    const heightScale = availableHeight / (config.wrapperSize + topOverflow);
+    targetScale = Math.min(widthScale, heightScale);
+  }
+
+  document.documentElement.style.setProperty('--map-scale', Math.min(1, Math.max(0.2, targetScale)));
 }
 setMapScale();
 window.addEventListener('resize', setMapScale);
 
-var dateControl = document.querySelector('input[type="date"]');
-dateControl.value = config.defaultDate;
+const dateControl = { value: config.defaultDate };
 
 let sunAndNightDegreesArray = calculateSunAndNightDegrees(config.defaultDate, config.latlongCoords)
 
@@ -55,11 +443,6 @@ var data = [
 // Setup global variables
 var svg = document.getElementById('pie-chart'),
     list = document.getElementById('pie-values'),
-    totalValue = 0,
-    radius = config.radius,
-    circleLength = config.circleLength, // Circumference
-    spaceLeft = config.circleLength,
-
     natValue = data[0].degrees,
     dayValue = data[1].degrees,
     sliderEnd =  natValue + config.sliderOffset,
@@ -67,15 +450,17 @@ var svg = document.getElementById('pie-chart'),
 
 	console.log( sliderStart, sliderEnd );
 
-// Get total value of all data
-for (var i = 0; i < data.length; i++) {
-  totalValue += data[i].total;
-}
-
-createPieChart(data, config.radius, config.circleLength, spaceLeft)
+createPieChart(data, config.radius, config.circleLength)
 datePickerUpdate(config.defaultDate)
 
-function createPieChart(data, radius, circleLength, spaceLeft){
+function createPieChart(data, radius, circleLength){
+  const totalValue = data.reduce((sum, item) => sum + item.total, 0);
+  let spaceLeft = circleLength;
+
+  // Rebuild the ring from scratch to avoid accumulated segments on date changes.
+  svg.innerHTML = '';
+  list.innerHTML = '';
+
   // Loop trough data to create pie
   for (var c = 0; c < data.length; c++) {
 
@@ -84,8 +469,8 @@ function createPieChart(data, radius, circleLength, spaceLeft){
     
     // Set attributes
     circle.setAttribute("class", "pie-chart-value");
-    circle.setAttribute("cx", 430);
-    circle.setAttribute("cy", 430);
+    circle.setAttribute("cx", config.pieCenter);
+    circle.setAttribute("cy", config.pieCenter);
     circle.setAttribute("r", radius);
     
     // Set dash on circle
@@ -138,43 +523,44 @@ function sliderValueToTime(percent, dateControl, latlongCoords) {
       return null;
   }
 
-  // Calculate total daylight time in minutes
-  let sunriseMinutes = times.sunrise.getUTCHours() * 60 + times.sunrise.getUTCMinutes(); // Format to utc to accounts for winter/summer time. 
-  let sunsetMinutes = times.sunset.getUTCHours() * 60 + times.sunset.getUTCMinutes();
+  // Calculate total daylight time in seconds.
+  let sunriseSeconds = (times.sunrise.getUTCHours() * 3600)
+    + (times.sunrise.getUTCMinutes() * 60)
+    + times.sunrise.getUTCSeconds(); // UTC accounts for winter/summer time.
+  let sunsetSeconds = (times.sunset.getUTCHours() * 3600)
+    + (times.sunset.getUTCMinutes() * 60)
+    + times.sunset.getUTCSeconds();
 
-  console.log(sunsetMinutes)
-  let daylightDuration = sunsetMinutes - sunriseMinutes;
+  console.log(sunsetSeconds)
+  let daylightDuration = sunsetSeconds - sunriseSeconds;
 
-  // Calculate the minutes corresponding to the percentage of daylight
-  let minutesFromSunrise = (percent / 100) * daylightDuration;
-  let totalMinutes = sunriseMinutes + minutesFromSunrise;
+  // Calculate the seconds corresponding to the percentage of daylight.
+  let secondsFromSunrise = (percent / 100) * daylightDuration;
+  let totalSeconds = sunriseSeconds + secondsFromSunrise;
 
-  // Convert total minutes into hours and minutes
-  let hours = Math.floor(totalMinutes / 60);
-  let minutes = Math.floor(totalMinutes % 60);
+  // Convert total seconds into hours, minutes and seconds.
+  let hours = Math.floor(totalSeconds / 3600);
+  let minutes = Math.floor((totalSeconds % 3600) / 60);
+  let seconds = Math.floor(totalSeconds % 60);
   console.log(minutes)
 
-  // Format hours and minutes into HH:MM format
-  let time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  // Format into HH:MM:SS.
+  let time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   console.log(time)
 
   let formattedMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
   let formattedDate = date.getUTCDate().toString().padStart(2, '0');
 
   // Format the final string
-  let formattedString = `${date.getUTCFullYear()}-${formattedMonth}-${formattedDate}T${time}:00+00:00/${date.getUTCFullYear()}-${formattedMonth}-${formattedDate}T00:00:00+00:00`; // Format into UTC TIME
+  let formattedString = `${date.getUTCFullYear()}-${formattedMonth}-${formattedDate}T${time}+00:00/${date.getUTCFullYear()}-${formattedMonth}-${formattedDate}T00:00:00+00:00`; // Format into UTC TIME
   console.log('Formatted string:', formattedString);
 
   // Create a new Date object for local time
   let localTime = new Date(date);
-  localTime.setUTCHours(hours, minutes, 0);
-
-  // Sync time input to local time (not UTC) so input matches the clock display
-  const timeInput = document.querySelector('input.time');
-  if (timeInput) timeInput.value = `${localTime.getHours().toString().padStart(2, '0')}:${localTime.getMinutes().toString().padStart(2, '0')}`;
+  localTime.setUTCHours(hours, minutes, seconds, 0);
 
   // Convert local time to local timezone string
-  let localTimeString = localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let localTimeString = localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   updateSliderTime(localTimeString)
 
   return formattedString;
@@ -274,7 +660,7 @@ function updateSlider(dateControl, latlongCoords) {
   $("#slider").roundSlider("option", "endAngle", sunEndDegrees + config.sliderOffset);
   $("#slider").roundSlider("option", "value", localTimeToSliderPercent(config.defaultTime, dateControl, latlongCoords));
 
-  createPieChart(data, config.radius, config.circleLength, spaceLeft);
+  createPieChart(data, config.radius, config.circleLength);
 
   // Re-render the pie chart with updated rotation
   $("#pie-chart").css({'transform' : 'rotate('+ (sunStartDegrees + config.sliderOffset  + config.rotationAdjustment) +'deg)'});
@@ -294,18 +680,35 @@ function updateSunTime(sunMinutes){
 }
 
 function updateSliderTime(time){
-  document.getElementById('slider-time').innerText = `${time}`
+  const [hours, minutes] = String(time).split(':');
+  const displayTime = (hours && minutes) ? `${hours}:${minutes}` : String(time);
+  document.getElementById('slider-time').value = displayTime;
+
+  if (config.eclipse) {
+    updateEclipsePreview(config.eclipse, String(time));
+  }
+}
+
+function syncTimeInputToSliderAndClock(localTimeValue, dateValue, latlongCoords) {
+  const percent = localTimeToSliderPercent(localTimeValue, dateValue, latlongCoords);
+
+  // Keep the round slider handle and ring in sync with the typed time.
+  $("#slider").roundSlider("option", "value", percent);
+  updateSliderTime(localTimeValue);
+  roundSliderUpdate({ value: percent });
 }
 
 function localTimeToSliderPercent(localTimeStr, dateStr, latlongCoords) {
   const date = new Date(dateStr);
   const times = SunCalc.getTimes(date, latlongCoords[1], latlongCoords[0]);
-  const sunriseUTC = times.sunrise.getUTCHours() * 60 + times.sunrise.getUTCMinutes();
-  const sunsetUTC = times.sunset.getUTCHours() * 60 + times.sunset.getUTCMinutes();
-  const [h, m] = localTimeStr.split(':').map(Number);
+  const sunriseUTC = (times.sunrise.getUTCHours() * 3600) + (times.sunrise.getUTCMinutes() * 60) + times.sunrise.getUTCSeconds();
+  const sunsetUTC = (times.sunset.getUTCHours() * 3600) + (times.sunset.getUTCMinutes() * 60) + times.sunset.getUTCSeconds();
+  const parsed = parseLocalClockToParts(localTimeStr);
+  if (!parsed) return 0;
+  const { hours, minutes, seconds } = parsed;
   const localDate = new Date(dateStr);
-  localDate.setHours(h, m, 0, 0);
-  const targetUTC = localDate.getUTCHours() * 60 + localDate.getUTCMinutes();
+  localDate.setHours(hours, minutes, seconds, 0);
+  const targetUTC = (localDate.getUTCHours() * 3600) + (localDate.getUTCMinutes() * 60) + localDate.getUTCSeconds();
   return Math.max(0, Math.min(100, (targetUTC - sunriseUTC) / (sunsetUTC - sunriseUTC) * 100));
 }
 
@@ -314,75 +717,102 @@ function updateSliderTimeFromValue(percent, dateControl, latlongCoords) {
   let date = new Date(dateControl.value);
   let times = SunCalc.getTimes(date, latlongCoords[1], latlongCoords[0]);
 
-  // Calculate total daylight time in minutes
-  let sunriseMinutes = times.sunrise.getUTCHours() * 60 + times.sunrise.getUTCMinutes(); // Format to utc to accounts for winter/summer time. 
-  let sunsetMinutes = times.sunset.getUTCHours() * 60 + times.sunset.getUTCMinutes();
+  // Calculate total daylight time in seconds.
+  let sunriseSeconds = (times.sunrise.getUTCHours() * 3600)
+    + (times.sunrise.getUTCMinutes() * 60)
+    + times.sunrise.getUTCSeconds(); // UTC accounts for winter/summer time.
+  let sunsetSeconds = (times.sunset.getUTCHours() * 3600)
+    + (times.sunset.getUTCMinutes() * 60)
+    + times.sunset.getUTCSeconds();
 
-  let daylightDuration = sunsetMinutes - sunriseMinutes;
+  let daylightDuration = sunsetSeconds - sunriseSeconds;
 
-  // Calculate the minutes corresponding to the percentage of daylight
-  let minutesFromSunrise = (percent / 100) * daylightDuration;
-  let totalMinutes = sunriseMinutes + minutesFromSunrise;
+  // Calculate the seconds corresponding to the percentage of daylight.
+  let secondsFromSunrise = (percent / 100) * daylightDuration;
+  let totalSeconds = sunriseSeconds + secondsFromSunrise;
 
-  // Convert total minutes into hours and minutes
-  let hours = Math.floor(totalMinutes / 60);
-  let minutes = Math.floor(totalMinutes % 60);
+  // Convert total seconds into hours, minutes and seconds.
+  let hours = Math.floor(totalSeconds / 3600);
+  let minutes = Math.floor((totalSeconds % 3600) / 60);
+  let seconds = Math.floor(totalSeconds % 60);
 
   // Create a new Date object for local time
   let localTime = new Date(date);
-  localTime.setUTCHours(hours, minutes, 0);
+  localTime.setUTCHours(hours, minutes, seconds, 0);
 
   // Convert local time to local timezone string
-  let localTimeString = localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let localTimeString = localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   
+  console.log('new local time', localTimeString)
   updateSliderTime(localTimeString)
+}
+
+function moveSupportBranding() {
+  const logo = document.querySelector('.logo');
+  const copyright = document.querySelector('.widget-map-copyright');
+  const desktopLogoSlot = document.querySelector('.desktop-corner__logo-slot');
+  const desktopCopyrightSlot = document.querySelector('.desktop-corner__copyright');
+  const mobileLogoSlot = document.querySelector('.mobile-sticky-header__logo-slot');
+  const mobileCopyrightSlot = document.querySelector('.mobile-copyright');
+  const isMobileLayout = window.matchMedia('(max-width: 1449px)').matches;
+
+  if (logo) {
+    const targetLogoSlot = isMobileLayout ? mobileLogoSlot : desktopLogoSlot;
+    if (targetLogoSlot && logo.parentElement !== targetLogoSlot) {
+      targetLogoSlot.appendChild(logo);
+    }
+  }
+
+  if (copyright) {
+    const targetCopyrightSlot = isMobileLayout ? mobileCopyrightSlot : desktopCopyrightSlot;
+    if (targetCopyrightSlot && copyright.parentElement !== targetCopyrightSlot) {
+      targetCopyrightSlot.appendChild(copyright);
+    }
+  }
 }
 
 
 
 jQuery(document).ready(($) => {
+  moveSupportBranding();
+  window.addEventListener('resize', moveSupportBranding);
+  bindEclipseTimeButtons();
+  bindTimeInput();
+  updateEclipseEstimateForCurrentLocation();
+
+  widget.on('ready', () => {
+    moveSupportBranding();
+  })
 
 // Range slider init
 	$("#slider").roundSlider({
-		radius: 420,
+    radius: config.sliderRadius,
 		width: 20,
-    	value: localTimeToSliderPercent(config.defaultTime, config.defaultDate, config.latlongCoords),
-    	startAngle: sliderStart,
-    	endAngle: sliderEnd, 
-    	showTooltip: false,
-    	handleSize: "+40",
-    	handleShape: "dot",
-      change: roundSliderUpdate,
-      drag: function (e) {
-        // e.value will be the current value of the slider during dragging
-        updateSliderTimeFromValue(e.value, dateControl, config.latlongCoords); // horribly inefficient since there's so much calculation it doesn't need to do
-      }
+    step: config.sliderStep,
+    value: localTimeToSliderPercent(config.defaultTime, config.defaultDate, config.latlongCoords),
+    startAngle: sliderStart,
+    endAngle: sliderEnd, 
+    showTooltip: false,
+    handleSize: "+40",
+    handleShape: "dot",
+    change: roundSliderUpdate,
+    drag: function (e) {
+      // e.value will be the current value of the slider during dragging
+      updateSliderTimeFromValue(e.value, dateControl, config.latlongCoords); // horribly inefficient since there's so much calculation it doesn't need to do
+    }
 	});
 
   // Rotate color fields according to natValue
   $("#pie-chart").css({'transform' : 'rotate('+ (sunDegrees + config.sliderOffset + config.rotationAdjustment) +'deg)'}); // + 180 to flip it to correct side, + 45 due to the offset
 
-  dateControl.addEventListener('change', function() {
-    const timeControl = document.querySelector('input.time');
-    if (timeControl) timeControl.value = config.defaultTime;
-    datePickerUpdate(this.value);
-  });
-
-  const timeControl = document.querySelector('input.time');
-  if (timeControl) {
-    timeControl.addEventListener('change', function() {
-      const percent = localTimeToSliderPercent(this.value, dateControl.value, config.latlongCoords);
-      roundSliderUpdate({ value: percent });
-    });
-  }
-
   // Override widget's default/cached center with our desired starting position
-  widget.getMap().getView().setCenter(config.mapCenter);
-  widget.getMap().getView().setZoom(config.mapZoom);
+  widget.setView({
+    zoomLevel: config.mapZoom,
+    x: config.mapCenter[0],
+    y: config.mapCenter[1],
+  })
 
   widget.on('mapmove', (eventname, scope, mapstate) => {
-    console.log('Mapstate:', mapstate);
-
     let coordsToGeoJSON = {
       "type": "Feature",
       "geometry": {
@@ -397,8 +827,9 @@ jQuery(document).ready(($) => {
     };
 
     widget.transform(coordsToGeoJSON, options, (geojson) => {
-      console.log(geojson.geometry.coordinates);
+      console.log('Coords', geojson.geometry.coordinates);
       config.latlongCoords = geojson.geometry.coordinates;
+      updateEclipseEstimateForCurrentLocation();
     });
 
   });
@@ -406,14 +837,14 @@ jQuery(document).ready(($) => {
 
 });	// end document.ready-function	// end document.ready-function
 
-document.getElementById("fullscreen").addEventListener("click", function() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(err => {
-      console.log(`Fejl ved forsøg på at gå i fullscreen: ${err.message}`);
-    });
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  }
-});
+// document.getElementById("fullscreen").addEventListener("click", function() {
+//   if (!document.fullscreenElement) {
+//     document.documentElement.requestFullscreen().catch(err => {
+//       console.log(`Fejl ved forsøg på at gå i fullscreen: ${err.message}`);
+//     });
+//   } else {
+//     if (document.exitFullscreen) {
+//       document.exitFullscreen();
+//     }
+//   }
+// });

@@ -16,31 +16,29 @@
                 <path d="M.86.3H16.3V13.2c-.63.14-1.2.44-1.65.87l-2.48-2.29-.4.44 2.48 2.28c-.28.36-.48.77-.6 1.22H.85V.3zm0 17.16h12.7c.15.63.45 1.2.87 1.65l-2.28 2.48.43.4 2.28-2.48c.42.32.9.55 1.43.66V32.9H.86V17.46zM17.92.3h15.43v15.43H20.49a3.58 3.58 0 0 0-.81-1.45l2.28-2.47-.43-.4-2.29 2.48c-.38-.3-.83-.52-1.32-.64V.3z" fill="currentColor" fill-rule="evenodd"></path>
             </svg>
         </header> -->
+        <div class="mobile-sticky-header">
+            <div class="mobile-sticky-header__bar">
+                <h1 class="mobile-sticky-header__title">Solformørkelse 2026</h1>
+                <div class="mobile-sticky-header__logo-slot"></div>
+            </div>
+        </div>
         <main>
-            
             <div class="panel">
                 <div class="panel-header">
-                    <h1 class="headline">Solformørkelse 2026</h1>
+                    <h2 class="headline">Solformørkelse 2026</h2>
                     <p class="sub">Den 12. august 2026 vil der i tidsrummet kl. 19 til 21 være delvis solformørkelse i hele Danmark. Afhængigt af hvor i landet man befinder sig, vil solen blive formørket 80-88 %. Formørkelsen topper kl. 20:04.</p>
                     <p class="sub">Tidspunktet betyder, at solen står lavt på himlen, og skyggerne bliver lange. Indtast din adresse og se hvor i dit nabolag, du har mulighed for at se solen</p>
+                    <div><p class="sub warning-text">Husk, at for at se solformørkelsen skal man bruge solformørkelsesbriller...</p></div>
                     <a href="https://lex.dk/solform%C3%B8rkelsen_den_12._august_2026" target="_blank">Læs mere om solformørkelsen den 12. august 2026</a>
                 </div>
                 <div class="panel-body">
-                    <div data-widget-detach="searchfield" class="searchfield"></div>
-                    <div data-widget-detach="datepicker" class="datepicker">
-                        <div class="datepicker-row">
-                            <label>
-                                <input class="date" type="date" value="2018-11-20" placeholder="I DAG" />
-                            </label>
-                            <label>
-                                <input class="time" type="time" value="20:00" />
-                            </label>
-                        </div>
-                    <div><p class="sub">Husk, at for at se solformørkelsen skal man bruge solformørkelsesbriller...</p></div>
+                    <div class="search-row">
+                        <div data-widget-detach="locateme" class="locateme"></div>
+                        <div data-widget-detach="searchfield" class="searchfield"></div>
                     </div>
-                    <button class="btn-fullscreen" id="fullscreen" title="Vis i fuldskærm">
+                    <!-- <button class="btn-fullscreen" id="fullscreen" title="Vis i fuldskærm">
                         <span class="mdi mdi-fullscreen"></span>
-                    </button>
+                    </button> -->
 
                     <div class="summary" style="display: none;">
                         <div class="procent">
@@ -73,11 +71,46 @@
                     </div>
                 </div>
                 <div class="clock">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="#f3c546"><path d="M516-510v-174q0-15.3-10.29-25.65Q495.42-720 480.21-720t-25.71 10.35Q444-699.3 444-684v189q0 8 3 14.5t8 11.5l133.85 133.85Q600-324 614.5-324.5 629-325 640-336t11-25.5q0-14.5-11.34-25.75L516-510ZM480-96q-79.38 0-149.19-30T208.5-208.5Q156-261 126-330.96t-30-149.5Q96-560 126-630q30-70 82.5-122t122.46-82q69.96-30 149.5-30t149.55 30.24q70 30.24 121.79 82.08 51.78 51.84 81.99 121.92Q864-559.68 864-480q0 79.38-30 149.19T752-208.5Q700-156 629.87-126T480-96Zm0-384Zm.48 312q129.47 0 220.5-91.5Q792-351 792-480.48q0-129.47-91.02-220.5Q609.95-792 480.48-792 351-792 259.5-700.98 168-609.95 168-480.48 168-351 259.5-259.5T480.48-168Z"/></svg>
-                    <p id="slider-time">12:00</p>
+                    <div class="clock-main">
+                        <input type="text" id="slider-time" class="slider-time" value="12:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" inputmode="numeric">
+                        <div class="eclipse-preview-block" aria-hidden="true">
+                            <div class="eclipse-preview">
+                                <div class="eclipse-preview__sun"></div>
+                                <div class="eclipse-preview__moon" id="eclipse-preview-moon"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: rgb(48 64 72 / 55%); text-align: center; margin: 0.75rem 0 0.5rem 0; letter-spacing: 0.05em; text-transform: uppercase;">Klik for at vælge tid</p>
+                    <div class="eclipse-info" id="eclipse-info">
+                        <div class="eclipse-times" role="group" aria-label="Formørkelsestidspunkter">
+                            <div class="eclipse-time-slot">
+                                <button type="button" class="eclipse-time-btn" data-eclipse-target="start">
+                                    <span class="eclipse-time-btn__label">Start</span>
+                                    <span id="eclipse-start">--:--:--</span>
+                                </button>
+                            </div>
+                            <div class="eclipse-time-slot eclipse-time-slot--peak">
+                                <button type="button" class="eclipse-time-btn" data-eclipse-target="peak">
+                                    <span class="eclipse-time-btn__label">Formorkelse (<span id="eclipse-percentage">--.-%</span>)</span>
+                                    <span id="eclipse-peak">--:--:--</span>
+                                </button>
+                            </div>
+                            <div class="eclipse-time-slot">
+                                <button type="button" class="eclipse-time-btn" data-eclipse-target="end">
+                                    <span class="eclipse-time-btn__label">Slut</span>
+                                    <span id="eclipse-end">--:--:--</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                <div class="mobile-copyright detach-copyright"></div>
             </div>
         </main>
+        <div class="desktop-corner">
+            <div class="desktop-corner__copyright detach-copyright"></div>
+            <div class="desktop-corner__logo-slot"></div>
+        </div>
         <img class="logo" src="assets/images/logo-color-black.png" alt="Septima" />
     </body>
 </html>
