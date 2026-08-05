@@ -783,11 +783,16 @@
     const TIME_ZONE = 'Europe/Copenhagen';
     const DATE_STR = '2026-08-12';
 
+    function getCurrentLocalMinuteOfDay() {
+      const now = new Date();
+      return (now.getHours() * 60) + now.getMinutes();
+    }
+
     const state = {
       lngLat: [12.539792090268461, 55.70698126629835],
       mapCenter25832: [724282.08, 6178621.15],
       mapZoom: 11,
-      selectedMinute: 20 * 60,
+      selectedMinute: getCurrentLocalMinuteOfDay(),
       solar: null,
       drag: false,
       hasLoadedInitialWms: false,
@@ -1582,7 +1587,7 @@
         });
 
         state.lngLat = await centerToLngLat(state.mapCenter25832);
-        refreshSolarAndRender(false);
+        refreshSolarAndRender(true);
         moveSupportBranding();
         bindWmsLocking();
 
@@ -1625,6 +1630,7 @@
     function boot() {
       moveSupportBranding();
       applyMobileMapDpiMode();
+      updateTimeInputs(state.selectedMinute);
       window.addEventListener('load', applyMobileMapDpiMode);
       window.addEventListener('resize', moveSupportBranding);
       window.addEventListener('resize', applyMobileMapDpiMode);

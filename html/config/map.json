@@ -10,6 +10,8 @@
     "fullscreen": false,
     "mapcontrols": {
       "dragPan": true,
+      "dragRotate": false,
+      "pinchRotate": false,
       "mouseWheelZoom": true,
       "keyboardZoom": true,
       "keyboardPan": true
