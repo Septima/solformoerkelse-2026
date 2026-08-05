@@ -73,7 +73,11 @@
                 <div class="clock">
                     <div class="clock-main">
                         <div class="clock-readout">
-                            <input type="text" id="slider-time" class="slider-time" value="20:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" inputmode="numeric">
+                            <div class="slider-time" role="group" aria-label="Vælg tid">
+                                <input type="text" id="slider-hour" class="slider-time-input slider-time-input--hour" value="20" placeholder="TT" inputmode="numeric" maxlength="2" aria-label="Timer">
+                                <span class="slider-time-separator" aria-hidden="true">:</span>
+                                <input type="text" id="slider-minute" class="slider-time-input slider-time-input--minute" value="00" placeholder="MM" inputmode="numeric" maxlength="2" aria-label="Minutter">
+                            </div>
                             <div class="sun-coordinates" aria-live="polite">
                                 <span id="sun-altitude-readout">alt --.-°</span>
                                 <span id="sun-azimuth-readout">az --.-°</span>

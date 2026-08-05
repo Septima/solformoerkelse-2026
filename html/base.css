@@ -823,9 +823,25 @@ input::-webkit-datetime-edit-year-field:focus {
 	color: #114665;
 	opacity: 1;
 	font-weight: 700;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.08rem;
+	text-align: left;
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum" 1;
+	font-size: inherit;
+	font-family: inherit;
+	line-height: 1;
+	user-select: none;
+}
+
+.slider-time-input {
+	color: #114665;
+	opacity: 1;
+	font-weight: 700;
 	display: inline-block;
-	width: 5.4ch;
-	min-width: 5.4ch;
+	width: 2.2ch;
+	min-width: 2.2ch;
 	text-align: left;
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: "tnum" 1;
@@ -837,6 +853,19 @@ input::-webkit-datetime-edit-year-field:focus {
 	padding: 0;
 }
 
-.slider-time:focus {
+.slider-time-input::placeholder {
+	opacity: 0.55;
+}
+
+.slider-time-input:focus {
 	outline: none;
+}
+
+.slider-time-separator {
+	display: inline-block;
+	width: 0.55ch;
+	text-align: center;
+	font-weight: 700;
+	line-height: 1;
+	pointer-events: none;
 }

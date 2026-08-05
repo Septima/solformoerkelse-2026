@@ -164,6 +164,14 @@ function formatLocalClock(dateValue, includeSeconds = false) {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+function splitClockToHourMinute(rawValue) {
+  const normalized = normalizeClockString(rawValue, false);
+  if (!normalized) return null;
+
+  const [hours, minutes] = normalized.split(':');
+  return { normalized, hours, minutes };
+}
+
 function updateEclipsePreview(_eclipse, localTimeStr) {
   const previewCanvas = document.getElementById('eclipse-preview-canvas');
   const altitudeNode = document.getElementById('sun-altitude-readout');
@@ -197,7 +205,13 @@ function updateEclipsePreview(_eclipse, localTimeStr) {
 }
 
 function getCurrentPreviewTime() {
-  return (document.getElementById('slider-time')?.value || '').trim();
+  const hourInput = document.getElementById('slider-hour');
+  const minuteInput = document.getElementById('slider-minute');
+
+  if (!hourInput || !minuteInput) return config.defaultTime;
+
+  const candidate = `${String(hourInput.value || '').trim()}:${String(minuteInput.value || '').trim()}`;
+  return normalizeClockString(candidate, false) || config.defaultTime;
 }
 
 function getSolarEclipseByDateAndLngLat(dateStr, lngLat) {
@@ -291,78 +305,33 @@ function bindEclipseTimeButtons() {
 }
 
 function bindTimeInput() {
-  const timeInput = document.getElementById('slider-time');
+  const hourInput = document.getElementById('slider-hour');
+  const minuteInput = document.getElementById('slider-minute');
 
-  if (!timeInput) return;
+  if (!hourInput || !minuteInput) return;
 
-  const normalizeTimeInputValue = (rawValue) => {
-    const trimmed = String(rawValue || '').trim().replace(/\./g, ':');
-    if (!trimmed) return null;
+  const sanitizeTwoDigits = (rawValue) => String(rawValue || '').replace(/\D/g, '').slice(0, 2);
 
-    const directMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-    let hours;
-    let minutes;
-
-    if (directMatch) {
-      hours = Number.parseInt(directMatch[1], 10);
-      minutes = Number.parseInt(directMatch[2], 10);
-    } else if (/^\d{3,4}$/.test(trimmed)) {
-      // allow bare 4-digit entry like "2000" → "20:00"
-      const digits = trimmed.padStart(4, '0');
-      hours = Number.parseInt(digits.slice(0, 2), 10);
-      minutes = Number.parseInt(digits.slice(2, 4), 10);
-    } else {
-      return null;
-    }
-
-    if (
-      !Number.isInteger(hours)
-      || !Number.isInteger(minutes)
-      || hours < 0
-      || hours > 23
-      || minutes < 0
-      || minutes > 59
-    ) {
-      return null;
-    }
-
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  const applyClockToInputs = (clockValue) => {
+    const split = splitClockToHourMinute(clockValue) || splitClockToHourMinute(config.defaultTime);
+    hourInput.value = split.hours;
+    minuteInput.value = split.minutes;
+    return split.normalized;
   };
 
-  const sanitizeDraftTimeValue = (rawValue) => {
-    // strip anything that isn't a digit or colon while typing
-    const cleaned = String(rawValue || '').replace(/\./g, ':').replace(/[^\d:]/g, '');
-    const firstColonIndex = cleaned.indexOf(':');
+  const getDraftClockFromInputs = () => `${sanitizeTwoDigits(hourInput.value)}:${sanitizeTwoDigits(minuteInput.value)}`;
 
-    if (firstColonIndex === -1) {
-      return cleaned.slice(0, 2);
-    }
-
-    const hours = cleaned.slice(0, firstColonIndex).replace(/:/g, '').slice(0, 2);
-    const minutes = cleaned.slice(firstColonIndex + 1).replace(/:/g, '').slice(0, 2);
-    return `${hours}:${minutes}`;
-  };
-
-  let lastValidTime = normalizeTimeInputValue(timeInput.value) || config.defaultTime;
-  timeInput.value = lastValidTime;
-
-  timeInput.addEventListener('input', () => {
-    const sanitized = sanitizeDraftTimeValue(timeInput.value);
-    if (sanitized !== timeInput.value) {
-      timeInput.value = sanitized;
-    }
-  });
+  let lastValidTime = applyClockToInputs(getCurrentPreviewTime());
 
   const commitTimeChange = () => {
-    const normalized = normalizeTimeInputValue(timeInput.value);
+    const normalized = normalizeClockString(getDraftClockFromInputs(), false);
 
     if (!normalized) {
-      // revert to last known good value
-      timeInput.value = lastValidTime;
+      applyClockToInputs(lastValidTime);
       return;
     }
 
-    timeInput.value = normalized;
+    applyClockToInputs(normalized);
 
     if (normalized === lastValidTime) return;
 
@@ -373,8 +342,35 @@ function bindTimeInput() {
     }
   };
 
-  timeInput.addEventListener('change', commitTimeChange);
-  timeInput.addEventListener('blur', commitTimeChange);
+  const wireInput = (input, sibling) => {
+    input.addEventListener('input', () => {
+      const sanitized = sanitizeTwoDigits(input.value);
+      if (sanitized !== input.value) {
+        input.value = sanitized;
+      }
+
+      if (input === hourInput && sanitized.length === 2) {
+        sibling.focus();
+        sibling.select();
+      }
+    });
+
+    input.addEventListener('change', commitTimeChange);
+    input.addEventListener('blur', commitTimeChange);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        commitTimeChange();
+      }
+
+      if (input === minuteInput && event.key === 'Backspace' && minuteInput.selectionStart === 0 && minuteInput.selectionEnd === 0 && minuteInput.value.length === 0) {
+        hourInput.focus();
+        hourInput.setSelectionRange(hourInput.value.length, hourInput.value.length);
+      }
+    });
+  };
+
+  wireInput(hourInput, minuteInput);
+  wireInput(minuteInput, hourInput);
 }
 
 function renderEclipseInfo(eclipse) {
@@ -451,7 +447,18 @@ function setMapScale() {
   const isStackedLayout = window.matchMedia('(max-width: 1449px)').matches;
   const viewportWidth = window.visualViewport?.width || window.innerWidth || 0;
   const containerWidth = mapContainer.clientWidth || mapContainer.getBoundingClientRect().width || 0;
-  const usableWidth = Math.max(containerWidth, Math.min(viewportWidth, config.wrapperSize));
+  let usableWidth = Math.max(containerWidth, Math.min(viewportWidth, config.wrapperSize));
+
+  // iOS Chrome can briefly report unstable narrow viewport measurements while scrolling.
+  // Reuse the last stable mobile width to prevent dial/map shrink jumps into white background.
+  if (isStackedLayout && usableWidth < 260 && lastStableMobileWidth >= 260) {
+    usableWidth = lastStableMobileWidth;
+  }
+
+  if (isStackedLayout && usableWidth >= 260) {
+    lastStableMobileWidth = usableWidth;
+  }
+
   const widthScale = usableWidth / config.wrapperSize;
 
   if (!Number.isFinite(widthScale) || widthScale <= 0) {
@@ -477,6 +484,8 @@ function setMapScale() {
 }
 
 let mapScaleRetryTimer = null;
+let lastStableMobileWidth = 0;
+let lastVisualViewportWidth = window.visualViewport?.width || window.innerWidth || 0;
 
 function scheduleMapScale() {
   if (mapScaleRetryTimer) {
@@ -503,7 +512,16 @@ window.addEventListener('orientationchange', scheduleMapScale);
 window.addEventListener('load', scheduleMapScale);
 
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', scheduleMapScale);
+  window.visualViewport.addEventListener('resize', () => {
+    const currentWidth = window.visualViewport?.width || 0;
+    const widthDelta = Math.abs(currentWidth - lastVisualViewportWidth);
+
+    // On iOS scroll, visual viewport height changes continuously; avoid rescaling unless width changed.
+    if (widthDelta >= 2) {
+      lastVisualViewportWidth = currentWidth;
+      scheduleMapScale();
+    }
+  });
 }
 
 const dateControl = { value: config.defaultDate };
@@ -772,7 +790,14 @@ function updateSunTime(sunMinutes){
 
 function updateSliderTime(time){
   const displayTime = normalizeClockString(time, false) || config.defaultTime;
-  document.getElementById('slider-time').value = displayTime;
+  const split = splitClockToHourMinute(displayTime);
+  const hourInput = document.getElementById('slider-hour');
+  const minuteInput = document.getElementById('slider-minute');
+
+  if (split && hourInput && minuteInput) {
+    hourInput.value = split.hours;
+    minuteInput.value = split.minutes;
+  }
 
   if (config.eclipse) {
     updateEclipsePreview(config.eclipse, displayTime);
