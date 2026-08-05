@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Solar Eclipse 2026 - Prototype 2</title>
+  <title>Solformørkelse 2026</title>
   <style>
     :root {
       --bg: #eef3ef;
@@ -694,15 +694,15 @@
         <div class="preview-panel">
           <div class="preview-top">
             <div class="preview-readout">
-              <div class="time-box" role="group" aria-label="Select time">
-                <input id="time-hour" inputmode="numeric" maxlength="2" value="20" aria-label="Hour">
+              <div class="time-box" role="group" aria-label="Vælg tidspunkt">
+                <input id="time-hour" inputmode="numeric" maxlength="2" value="20" aria-label="Timer">
                 <span>:</span>
-                <input id="time-minute" inputmode="numeric" maxlength="2" value="00" aria-label="Minute">
+                <input id="time-minute" inputmode="numeric" maxlength="2" value="00" aria-label="Minut">
               </div>
               <div class="metrics">
-                <div class="metric">Azimuth: <strong id="ui-azimuth">--.- deg</strong></div>
-                <div class="metric">Altitude: <strong id="ui-altitude">--.- deg</strong></div>
-                <div class="metric">Coverage: <strong id="ui-coverage">--.-%</strong></div>
+                <div class="metric">Azimut: <strong id="ui-azimuth">--.- grader</strong></div>
+                <div class="metric">Højde: <strong id="ui-altitude">--.- grader</strong></div>
+                <div class="metric">Dækning: <strong id="ui-coverage">--.-%</strong></div>
               </div>
             </div>
 
@@ -717,11 +717,11 @@
               <span id="btn-start-time" class="btn-time">--:--</span>
             </button>
             <button id="jump-noon" type="button">
-              <span class="btn-label">Peak (<span id="btn-peak-pct" class="btn-peak-pct">--.-%</span>)</span>
+              <span class="btn-label">Maks (<span id="btn-peak-pct" class="btn-peak-pct">--.-%</span>)</span>
               <span id="btn-peak-time" class="btn-time">--:--</span>
             </button>
             <button id="jump-sunset" type="button">
-              <span class="btn-label">End</span>
+              <span class="btn-label">Slut</span>
               <span id="btn-end-time" class="btn-time">--:--</span>
             </button>
           </div>
@@ -740,16 +740,16 @@
       <div class="map-top">
         <div class="map-frame-card">
           <div class="legend">
-            <span class="dot day"></span><span>Day</span>
-            <span class="dot night"></span><span>Night</span>
-            <span class="dot eclipse"></span><span>Eclipse</span>
+            <span class="dot day"></span><span>Dag</span>
+            <span class="dot night"></span><span>Nat</span>
+            <span class="dot eclipse"></span><span>Formørkelse</span>
           </div>
           <div id="stage" class="stage">
             <div class="map-cutout">
               <div class="widgetmap2"></div>
               <div class="map-crosshair" aria-hidden="true"></div>
             </div>
-            <svg id="ring-svg" class="ring-overlay" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-label="Solar dial ring"></svg>
+            <svg id="ring-svg" class="ring-overlay" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-label="Solskive"></svg>
           </div>
           <div class="map-copyright-slot detach-copyright"></div>
         </div>
@@ -1257,8 +1257,8 @@
         timeZone: TIME_ZONE,
       });
 
-      ui.azimuth.textContent = `${sample.azNorth.toFixed(1)} deg`;
-      ui.altitude.textContent = `${sample.altitude.toFixed(1)} deg`;
+      ui.azimuth.textContent = `${sample.azNorth.toFixed(1)} grader`;
+      ui.altitude.textContent = `${sample.altitude.toFixed(1)} grader`;
       ui.coverage.textContent = `${(((preview?.exactCoverage ?? preview?.coverage) || 0) * 100).toFixed(1)}%`;
     }
 
