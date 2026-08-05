@@ -107,7 +107,8 @@ function formatDateToDanishClock(date) {
 }
 
 function parseLocalClockToParts(localTimeStr) {
-  const [rawH, rawM, rawS] = localTimeStr.split(':');
+  const normalized = String(localTimeStr || '').trim().replace(/\./g, ':');
+  const [rawH, rawM, rawS] = normalized.split(':');
   const hours = Number(rawH);
   const minutes = Number(rawM);
   const seconds = Number(rawS ?? 0);
@@ -117,6 +118,50 @@ function parseLocalClockToParts(localTimeStr) {
   }
 
   return { hours, minutes, seconds };
+}
+
+function normalizeClockString(rawValue, includeSeconds = false) {
+  const cleaned = String(rawValue || '').trim().replace(/\./g, ':');
+  const match = cleaned.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = Number.parseInt(match[2], 10);
+  const seconds = Number.parseInt(match[3] || '0', 10);
+
+  if (
+    !Number.isInteger(hours)
+    || !Number.isInteger(minutes)
+    || !Number.isInteger(seconds)
+    || hours < 0
+    || hours > 23
+    || minutes < 0
+    || minutes > 59
+    || seconds < 0
+    || seconds > 59
+  ) {
+    return null;
+  }
+
+  if (includeSeconds) {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function formatLocalClock(dateValue, includeSeconds = false) {
+  if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) return null;
+
+  const hours = String(dateValue.getHours()).padStart(2, '0');
+  const minutes = String(dateValue.getMinutes()).padStart(2, '0');
+
+  if (!includeSeconds) {
+    return `${hours}:${minutes}`;
+  }
+
+  const seconds = String(dateValue.getSeconds()).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
 }
 
 function updateEclipsePreview(_eclipse, localTimeStr) {
@@ -251,7 +296,7 @@ function bindTimeInput() {
   if (!timeInput) return;
 
   const normalizeTimeInputValue = (rawValue) => {
-    const trimmed = String(rawValue || '').trim();
+    const trimmed = String(rawValue || '').trim().replace(/\./g, ':');
     if (!trimmed) return null;
 
     const directMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
@@ -286,7 +331,7 @@ function bindTimeInput() {
 
   const sanitizeDraftTimeValue = (rawValue) => {
     // strip anything that isn't a digit or colon while typing
-    const cleaned = String(rawValue || '').replace(/[^\d:]/g, '');
+    const cleaned = String(rawValue || '').replace(/\./g, ':').replace(/[^\d:]/g, '');
     const firstColonIndex = cleaned.indexOf(':');
 
     if (firstColonIndex === -1) {
@@ -401,10 +446,17 @@ function syncLocationFromMapCenter(mapCenter, shouldRefreshSlider = false) {
 
 function setMapScale() {
   const mapContainer = document.querySelector('.map-container');
-  if (!mapContainer) return;
+  if (!mapContainer) return false;
 
   const isStackedLayout = window.matchMedia('(max-width: 1449px)').matches;
-  const widthScale = mapContainer.clientWidth / config.wrapperSize;
+  const viewportWidth = window.visualViewport?.width || window.innerWidth || 0;
+  const containerWidth = mapContainer.clientWidth || mapContainer.getBoundingClientRect().width || 0;
+  const usableWidth = Math.max(containerWidth, Math.min(viewportWidth, config.wrapperSize));
+  const widthScale = usableWidth / config.wrapperSize;
+
+  if (!Number.isFinite(widthScale) || widthScale <= 0) {
+    return false;
+  }
 
   let targetScale = widthScale;
 
@@ -414,13 +466,45 @@ function setMapScale() {
     const topOverflow = getCssPxVar('--map-top-overflow', 20);
     const availableHeight = mapContainer.clientHeight - (clock?.offsetHeight || 0) - gap;
     const heightScale = availableHeight / (config.wrapperSize + topOverflow);
-    targetScale = Math.min(widthScale, heightScale);
+    if (Number.isFinite(heightScale) && heightScale > 0) {
+      targetScale = Math.min(widthScale, heightScale);
+    }
   }
 
-  document.documentElement.style.setProperty('--map-scale', Math.min(1, Math.max(0.2, targetScale)));
+  const clampedScale = Math.min(1, Math.max(0.28, targetScale));
+  document.documentElement.style.setProperty('--map-scale', clampedScale.toFixed(4));
+  return true;
 }
-setMapScale();
-window.addEventListener('resize', setMapScale);
+
+let mapScaleRetryTimer = null;
+
+function scheduleMapScale() {
+  if (mapScaleRetryTimer) {
+    window.clearTimeout(mapScaleRetryTimer);
+    mapScaleRetryTimer = null;
+  }
+
+  window.requestAnimationFrame(() => {
+    const applied = setMapScale();
+
+    // Retry shortly when Chrome reports transient 0-size boxes during initial layout/orientation changes.
+    if (!applied) {
+      mapScaleRetryTimer = window.setTimeout(() => {
+        mapScaleRetryTimer = null;
+        scheduleMapScale();
+      }, 120);
+    }
+  });
+}
+
+scheduleMapScale();
+window.addEventListener('resize', scheduleMapScale);
+window.addEventListener('orientationchange', scheduleMapScale);
+window.addEventListener('load', scheduleMapScale);
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', scheduleMapScale);
+}
 
 const dateControl = { value: config.defaultDate };
 
@@ -567,7 +651,7 @@ function sliderValueToTime(percent, dateControl, latlongCoords) {
   localTime.setUTCHours(hours, minutes, seconds, 0);
 
   // Convert local time to local timezone string
-  let localTimeString = localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  let localTimeString = formatLocalClock(localTime, false) || config.defaultTime;
   updateSliderTime(localTimeString)
 
   return formattedString;
@@ -687,12 +771,11 @@ function updateSunTime(sunMinutes){
 }
 
 function updateSliderTime(time){
-  const [hours, minutes] = String(time).split(':');
-  const displayTime = (hours && minutes) ? `${hours}:${minutes}` : String(time);
+  const displayTime = normalizeClockString(time, false) || config.defaultTime;
   document.getElementById('slider-time').value = displayTime;
 
   if (config.eclipse) {
-    updateEclipsePreview(config.eclipse, String(time));
+    updateEclipsePreview(config.eclipse, displayTime);
   }
 }
 
@@ -748,7 +831,7 @@ function updateSliderTimeFromValue(percent, dateControl, latlongCoords) {
   localTime.setUTCHours(hours, minutes, seconds, 0);
 
   // Convert local time to local timezone string
-  let localTimeString = localTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  let localTimeString = formatLocalClock(localTime, false) || config.defaultTime;
   
   console.log('new local time', localTimeString)
   updateSliderTime(localTimeString)
@@ -782,12 +865,14 @@ function moveSupportBranding() {
 
 jQuery(document).ready(($) => {
   moveSupportBranding();
+  scheduleMapScale();
   window.addEventListener('resize', moveSupportBranding);
   bindEclipseTimeButtons();
   bindTimeInput();
 
   widget.on('ready', () => {
     moveSupportBranding();
+    scheduleMapScale();
     syncLocationFromMapCenter(config.mapCenter, true);
   })
 

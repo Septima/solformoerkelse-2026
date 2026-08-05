@@ -264,11 +264,11 @@ footer {
 
 .clock-main {
 	display: grid;
-	grid-template-columns: max-content auto;
+	grid-template-columns: max-content max-content;
 	align-items: center;
 	gap: 0.5rem;
 	padding: 0.25rem 0.7rem;
-	padding-right: 4px;
+	padding-right: 0.5rem;
 	border-radius: 12px;
 	background: #fff;
 	border: 1px solid #b3b3b3;
@@ -824,7 +824,8 @@ input::-webkit-datetime-edit-year-field:focus {
 	opacity: 1;
 	font-weight: 700;
 	display: inline-block;
-	width: 5.2ch;
+	width: 5.4ch;
+	min-width: 5.4ch;
 	text-align: left;
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: "tnum" 1;
