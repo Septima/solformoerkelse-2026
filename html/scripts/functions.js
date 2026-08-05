@@ -1,5 +1,6 @@
 const { default: SunCalc } = await import('https://cdn.skypack.dev/suncalc@1.8.0');
 const { default: WidgetAPI } = await import('https://widget.cdn.septima.dk/latest/widgetapi.mjs')
+const { renderEclipsePreview } = await import('./preview.js');
 
 let SolarEclipse = null;
 let Catalogue = null;
@@ -118,119 +119,36 @@ function parseLocalClockToParts(localTimeStr) {
   return { hours, minutes, seconds };
 }
 
-function parseLocalClockToSeconds(localTimeStr) {
-  const parts = parseLocalClockToParts(localTimeStr);
-  if (!parts) return null;
-  return (parts.hours * 3600) + (parts.minutes * 60) + parts.seconds;
-}
+function updateEclipsePreview(_eclipse, localTimeStr) {
+  const previewCanvas = document.getElementById('eclipse-preview-canvas');
+  const altitudeNode = document.getElementById('sun-altitude-readout');
+  const azimuthNode = document.getElementById('sun-azimuth-readout');
+  const overlapNode = document.getElementById('sun-overlap-readout');
+  if (!previewCanvas || !config.latlongCoords) return;
 
-function circleOverlapArea(radius1, radius2, separation) {
-  if (separation >= radius1 + radius2) return 0;
+  const preview = renderEclipsePreview(previewCanvas, {
+    lngLat: config.latlongCoords,
+    date: dateControl.value,
+    time: String(localTimeStr || config.defaultTime),
+    timeZone: 'Europe/Copenhagen',
+  });
 
-  if (separation <= Math.abs(radius1 - radius2)) {
-    const minRadius = Math.min(radius1, radius2);
-    return Math.PI * minRadius * minRadius;
+  if (preview?.sun) {
+    if (altitudeNode) altitudeNode.innerText = `alt ${preview.sun.altitude.toFixed(1)}°`;
+    if (azimuthNode) azimuthNode.innerText = `az ${preview.sun.azimuth.toFixed(1)}°`;
+    if (overlapNode) overlapNode.innerText = `overlap ${((preview.exactCoverage ?? preview.coverage) * 100).toFixed(1)}%`;
+    console.log('Preview sun altitude:', {
+      time: String(localTimeStr || config.defaultTime),
+      lngLat: config.latlongCoords,
+      sunAltitudeDeg: Number(preview.sun.altitude.toFixed(3)),
+      sunAzimuthDeg: Number(preview.sun.azimuth.toFixed(3)),
+      overlapPct: Number((((preview.exactCoverage ?? preview.coverage) * 100)).toFixed(3)),
+    });
+  } else {
+    if (altitudeNode) altitudeNode.innerText = 'alt --.-°';
+    if (azimuthNode) azimuthNode.innerText = 'az --.-°';
+    if (overlapNode) overlapNode.innerText = 'overlap --.-%';
   }
-
-  const r1sq = radius1 * radius1;
-  const r2sq = radius2 * radius2;
-  const alpha = Math.acos((separation * separation + r1sq - r2sq) / (2 * separation * radius1));
-  const beta = Math.acos((separation * separation + r2sq - r1sq) / (2 * separation * radius2));
-  const part1 = r1sq * alpha;
-  const part2 = r2sq * beta;
-  const part3 = 0.5 * Math.sqrt(
-    (-separation + radius1 + radius2)
-    * (separation + radius1 - radius2)
-    * (separation - radius1 + radius2)
-    * (separation + radius1 + radius2)
-  );
-
-  return part1 + part2 - part3;
-}
-
-function solveSeparationForObscuration(radius1, radius2, obscuration) {
-  if (!Number.isFinite(obscuration) || obscuration <= 0) {
-    return radius1 + radius2;
-  }
-
-  const sunArea = Math.PI * radius1 * radius1;
-  const targetArea = Math.max(0, Math.min(1, obscuration)) * sunArea;
-
-  let low = Math.abs(radius1 - radius2);
-  let high = radius1 + radius2;
-
-  for (let i = 0; i < 26; i += 1) {
-    const mid = (low + high) / 2;
-    const area = circleOverlapArea(radius1, radius2, mid);
-    if (area > targetArea) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  return (low + high) / 2;
-}
-
-function updateEclipsePreview(eclipse, localTimeStr) {
-  const moonNode = document.getElementById('eclipse-preview-moon');
-  if (!moonNode) return;
-
-  const hasEclipse = Boolean(
-    eclipse
-    && eclipse.type !== 'none'
-    && Number.isFinite(eclipse.obscurationPct)
-    && eclipse.obscurationPct > 0
-  );
-
-  if (!hasEclipse) {
-    moonNode.style.opacity = '0';
-    moonNode.style.transform = 'translate(140%, 0)';
-    return;
-  }
-
-  moonNode.style.opacity = '1';
-
-  const startSec = parseLocalClockToSeconds(eclipse?.startLocal || '');
-  const peakSec = parseLocalClockToSeconds(eclipse?.peakLocal || '');
-  const endSec = parseLocalClockToSeconds(eclipse?.endLocal || '');
-  const currentSec = parseLocalClockToSeconds(localTimeStr || '');
-
-  if (
-    !Number.isFinite(startSec)
-    || !Number.isFinite(peakSec)
-    || !Number.isFinite(endSec)
-    || !Number.isFinite(currentSec)
-    || endSec <= startSec
-  ) {
-    moonNode.style.transform = 'translate(140%, 0)';
-    return;
-  }
-
-  const sunRadius = 1;
-  const moonRatio = Number.isFinite(eclipse.maxMoonSunRatio) ? eclipse.maxMoonSunRatio : 1;
-  const moonRadius = Math.max(0.7, Math.min(1.25, moonRatio));
-  const edgeDistance = sunRadius + moonRadius;
-
-  const maxObscuration = Math.max(0, Math.min(1, (eclipse.obscurationPct || 0) / 100));
-  const minSeparationAtPeak = solveSeparationForObscuration(sunRadius, moonRadius, maxObscuration);
-  const yOffset = Math.min(minSeparationAtPeak, edgeDistance * 0.92);
-  const xAtContact = Math.sqrt(Math.max(0, (edgeDistance * edgeDistance) - (yOffset * yOffset)));
-
-  let x = xAtContact;
-  if (peakSec > startSec && currentSec <= peakSec) {
-    // Move from first contact toward center and keep moving rightward before contact.
-    const prePeakSlope = -xAtContact / (peakSec - startSec);
-    x = xAtContact + ((currentSec - startSec) * prePeakSlope);
-  } else if (endSec > peakSec) {
-    // Move from center toward last contact and keep moving leftward after contact.
-    const postPeakSlope = -xAtContact / (endSec - peakSec);
-    x = (currentSec - peakSec) * postPeakSlope;
-  }
-
-  const xPercent = (x / edgeDistance) * 100;
-  const yPercent = -(yOffset / edgeDistance) * 35;
-  moonNode.style.transform = `translate(${xPercent}%, ${yPercent}%)`;
 }
 
 function getCurrentPreviewTime() {
@@ -434,7 +352,7 @@ function renderEclipseInfo(eclipse) {
   if (endButton) endButton.disabled = !eclipse.endLocal;
 
   if (Number.isFinite(eclipse.obscurationPct) && eclipse.obscurationPct > 0) {
-    percentageNode.innerText = `${eclipse.obscurationPct.toFixed(2)}%`;
+    percentageNode.innerText = `${eclipse.obscurationPct.toFixed(1)}%`;
   } else {
     percentageNode.innerText = '--.-%';
   }
@@ -448,6 +366,36 @@ function updateEclipseEstimateForCurrentLocation() {
   renderEclipseInfo(eclipse);
   console.log('Eclipse estimate for location:', config.latlongCoords, eclipse);
   return eclipse;
+}
+
+function syncLocationFromMapCenter(mapCenter, shouldRefreshSlider = false) {
+  if (!Array.isArray(mapCenter) || mapCenter.length < 2) return;
+
+  const coordsToGeoJSON = {
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: mapCenter,
+    }
+  };
+
+  const options = {
+    from: 'EPSG:25832',
+    to: 'EPSG:4326'
+  };
+
+  widget.transform(coordsToGeoJSON, options, (geojson) => {
+    config.latlongCoords = geojson.geometry.coordinates;
+
+    if (shouldRefreshSlider) {
+      updateSlider(dateControl.value, config.latlongCoords);
+      const percent = localTimeToSliderPercent(getCurrentPreviewTime() || config.defaultTime, dateControl.value, config.latlongCoords);
+      $("#slider").roundSlider("option", "value", percent);
+      roundSliderUpdate({ value: percent });
+    }
+
+    updateEclipseEstimateForCurrentLocation();
+  });
 }
 
 
@@ -837,10 +785,10 @@ jQuery(document).ready(($) => {
   window.addEventListener('resize', moveSupportBranding);
   bindEclipseTimeButtons();
   bindTimeInput();
-  updateEclipseEstimateForCurrentLocation();
 
   widget.on('ready', () => {
     moveSupportBranding();
+    syncLocationFromMapCenter(config.mapCenter, true);
   })
 
 // Range slider init
@@ -884,25 +832,7 @@ jQuery(document).ready(($) => {
   })
 
   widget.on('mapmove', (eventname, scope, mapstate) => {
-    let coordsToGeoJSON = {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": mapstate.center
-      }
-    };
-
-    let options = {
-      from: 'EPSG:25832',
-      to: 'EPSG:4326'
-    };
-
-    widget.transform(coordsToGeoJSON, options, (geojson) => {
-      console.log('Coords', geojson.geometry.coordinates);
-      config.latlongCoords = geojson.geometry.coordinates;
-      updateEclipseEstimateForCurrentLocation();
-    });
-
+    syncLocationFromMapCenter(mapstate.center);
   });
   
 
