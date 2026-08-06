@@ -1,6 +1,8 @@
 {
   "map": {
     "debug": false,
+    "maxZoomLevel": 11,
+    "useHash": true,
     "view": {
       "zoomLevel": 11,
       "x": 724282.08,

@@ -27,12 +27,17 @@
       --ring-day: #f3c546;
       --ring-eclipse: #ef7f3d;
       --sun: #ffd76b;
-      --stage-max: 920px;
+      --stage-max: clamp(620px, 44vw, 1600px);
+      --layout-vh-gutter: clamp(1.6rem, 4vw, 4.8rem);
+      --map-card-ui-reserve: clamp(3.2rem, 8vh, 5.2rem);
+      --portrait-header-offset: clamp(5rem, 11vh, 7rem);
       --map-ratio: 0.814;
       --ring-ratio: 0.86;
       --ring-width-ratio: 0.045;
       --desktop-map-dpi-scale: 0.8333;
       --desktop-map-dpi-scale-inv: 1.2;
+      --tablet-portrait-map-dpi-scale: 0.72;
+      --tablet-portrait-map-dpi-scale-inv: 1.3889;
       --mobile-map-dpi-scale: 0.46;
       --mobile-map-dpi-scale-inv: 2.1739;
       --control-height: 3rem;
@@ -61,26 +66,60 @@
     }
 
     body {
-      font: 16px/1.4 "proxima-nova", "Open Sans", "Segoe UI", sans-serif;
+      font: clamp(16px, 1.2vw, 52px) / 1.4 "proxima-nova", "Open Sans", "Segoe UI", sans-serif;
       color: var(--ink);
       background: radial-gradient(circle at 20% -15%, #ffffff 0%, #eef3ef 45%, #e5ece8 100%);
-      padding: clamp(0.8rem, 2vw, 1.6rem);
+      padding: clamp(0.8rem, 2vw, 2.4rem);
       position: relative;
     }
 
     .app {
-      width: min(100%, 1280px);
+      width: min(100%, 1800px);
       margin: 0 auto;
       display: grid;
-      grid-template-columns: minmax(340px, 460px) minmax(420px, 1fr);
-      gap: clamp(1rem, 2.5vw, 2rem);
+      grid-template-columns: 1fr;
+      gap: clamp(0.8rem, 2.2vw, 2rem);
       align-items: start;
     }
 
-    @media (min-width: 1081px) {
+    @media (orientation: landscape) {
+      .app {
+        grid-template-columns: minmax(300px, clamp(360px, 34vw, 680px)) minmax(280px, 1fr);
+        align-items: stretch;
+      }
+
       .panel {
-        min-height: calc(100dvh - 3.2rem);
+        min-height: calc(100dvh - var(--layout-vh-gutter));
         align-content: center;
+      }
+
+      .stage-card {
+        align-self: center;
+      }
+
+      .mobile-sticky-header {
+        display: none;
+      }
+
+      .headline {
+        display: block;
+      }
+    }
+
+    @media (orientation: landscape) and (min-width: 1081px) and (max-width: 2559px) {
+      .app {
+        width: fit-content;
+        max-width: 100%;
+        grid-template-columns: minmax(300px, clamp(360px, 34vw, 680px)) minmax(280px, min(var(--stage-max), calc(100dvh - var(--layout-vh-gutter) - var(--map-card-ui-reserve))));
+        justify-content: center;
+      }
+
+      .map-frame-card {
+        margin: 0;
+      }
+
+      .stage-card {
+        justify-items: start;
       }
     }
 
@@ -184,16 +223,18 @@
       color: #4F504F;
       font-weight: 700;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
+      gap: 0.38rem;
+      line-height: 1.35;
     }
 
     .warning-text::before {
       content: "";
-      display: inline-block;
+      display: block;
       flex: 0 0 auto;
       width: 1.2em;
       height: 1.2em;
-      margin-right: 0.38rem;
+      margin-top: 0.08em;
       background-repeat: no-repeat;
       background-position: center;
       background-size: contain;
@@ -340,6 +381,7 @@
     .map-frame-card {
       position: relative;
       width: min(100%, var(--stage-max));
+      max-height: calc(100dvh - var(--layout-vh-gutter));
       margin: 0 auto;
       border: 0;
       border-radius: 0;
@@ -356,14 +398,9 @@
       background: transparent;
     }
 
-    @media (min-width: 1081px) {
+    @media (orientation: landscape) {
       .map-frame-card {
-        width: min(100%, var(--stage-max), calc(100dvh - 4rem));
-        max-height: calc(100dvh - 4rem);
-      }
-
-      .stage-card {
-        align-self: center;
+        width: min(100%, var(--stage-max), calc(100dvh - var(--layout-vh-gutter) - var(--map-card-ui-reserve)));
       }
     }
 
@@ -425,6 +462,16 @@
       width: calc(100% * var(--desktop-map-dpi-scale-inv));
       height: calc(100% * var(--desktop-map-dpi-scale-inv));
       transform: translate(-50%, -50%) scale(var(--desktop-map-dpi-scale));
+      transform-origin: center center;
+    }
+
+    .map-cutout.tablet-portrait-dpi-out .widgetmap2 {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(100% * var(--tablet-portrait-map-dpi-scale-inv));
+      height: calc(100% * var(--tablet-portrait-map-dpi-scale-inv));
+      transform: translate(-50%, -50%) scale(var(--tablet-portrait-map-dpi-scale));
       transform-origin: center center;
     }
 
@@ -702,7 +749,7 @@
     .dot.night { background: var(--ring-night); }
     .dot.eclipse { background: var(--ring-eclipse); }
 
-    @media (max-width: 1080px) {
+    @media (orientation: portrait) {
       body {
         padding-top: calc(4.2rem + env(safe-area-inset-top, 0px));
       }
@@ -731,6 +778,11 @@
 
       .stage-card {
         order: 2;
+      }
+
+      .map-frame-card {
+        width: min(100%, var(--stage-max), calc(100dvh - var(--portrait-header-offset) - var(--map-card-ui-reserve)));
+        max-height: calc(100dvh - var(--portrait-header-offset));
       }
 
       .mobile-sticky-header {
@@ -788,7 +840,8 @@
       }
 
       .map-copyright-slot .widget-map-copyright {
-        white-space: nowrap;
+        white-space: normal;
+        text-align: center;
       }
 
       .preview-top {
@@ -801,6 +854,316 @@
 
       .time-actions {
         width: 100%;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      body {
+        padding-top: 0.8rem;
+      }
+
+      .panel {
+        min-height: 0;
+        align-content: start;
+      }
+
+      .stage-card {
+        position: sticky;
+        top: 0;
+        height: calc(100dvh - var(--layout-vh-gutter));
+        display: grid;
+        align-content: center;
+        align-self: start;
+      }
+
+      .map-frame-card {
+        width: min(100%, var(--stage-max), calc(100dvh - var(--layout-vh-gutter) - var(--map-card-ui-reserve)));
+        position: relative;
+        top: auto;
+        transform: none;
+      }
+
+      .desktop-corner {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.8rem;
+        bottom: auto;
+        left: auto;
+        width: auto;
+        height: auto;
+      }
+
+      .desktop-corner__logo-slot {
+        position: static;
+        justify-content: flex-end;
+      }
+
+      .desktop-corner__copyright {
+        display: none;
+      }
+    }
+
+    /* 4K & ULTRA-WIDE SCALING
+    -------------------------------------------------------------- */
+    @media (min-width: 2560px) and (orientation: landscape) {
+      :root {
+        --desktop-map-dpi-scale: 0.74;
+        --desktop-map-dpi-scale-inv: 1.3514;
+        --sw-font-size-default: 24px;
+        --sw-border-radius: 16px;
+      }
+
+      body {
+        padding: 2.4rem;
+        min-height: 100dvh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+      }
+
+      .app {
+        width: fit-content;
+        max-width: 100%;
+        grid-template-columns: minmax(510px, clamp(690px, 42vw, 1020px)) minmax(420px, var(--stage-max));
+        justify-content: center;
+        align-items: center;
+      }
+
+      .desktop-corner__copyright {
+        font-size: 1.1rem;
+        max-width: min(32rem, calc(100vw - 3rem));
+      }
+
+      .logo {
+        height: 3rem;
+      }
+
+      .headline {
+        font-size: clamp(1.55rem, 4vw, 4rem);
+      }
+
+      .sub {
+        font-size: clamp(1.1rem, 1.95vw, 2.25rem);
+      }
+
+      .warning-text {
+        font-size: clamp(1.1rem, 1.95vw, 2.25rem);
+        line-height: 1.35;
+      }
+
+      .warning-text::before {
+        width: 1.5em;
+        height: 1.5em;
+        margin-right: 0.5rem;
+      }
+
+      .panel {
+        min-height: calc(100dvh - 4.8rem);
+        align-content: center;
+        gap: clamp(1rem, 2vw, 2.5rem);
+      }
+
+      .panel-header {
+        gap: clamp(0.8rem, 1.5vw, 2rem);
+      }
+
+      .panel-body {
+        gap: clamp(0.5rem, 1vw, 1.5rem);
+      }
+
+      .stage-card {
+        gap: clamp(0.7rem, 1.4vw, 2rem);
+      }
+
+      .search-row .locateme {
+        flex: 0 0 82px;
+        width: 82px;
+        min-width: 82px;
+        min-height: 82px;
+      }
+
+      .widget-location-activate-button {
+        width: 82px;
+        height: 82px;
+        border-radius: 16px;
+        border: 2px solid #DEEDED;
+        font-size: 40px;
+      }
+
+      .widget-search-input {
+        border-radius: 16px !important;
+        border: 2px solid #DEEDED !important;
+        font-size: 1.55rem !important;
+        height: 82px !important;
+      }
+
+      .septimasearch .ssSearchBackground .ssCloseButton,
+      .septimasearch .ssSearchBackground .ssFixedText,
+      .septimasearch .ssSearchBackground .ssSearchIcon,
+      .septimasearch .ssSearchBackground .ssSpinner,
+      .septimasearch .ssSearchBackground input.ssInput,
+      .septimasearch .ssSearchHeader .ssPromotes,
+      .septimasearch .ssSearchHeader .ssPromotes .ssPromotedIcon,
+      .septimasearch .ssSearchHeader .ssSearchBackground {
+        height: 82px !important;
+        font-size: 1.55rem !important;
+        line-height: 82px !important;
+        padding-left: 0.8rem !important;
+      }
+
+      .widget-detached > .widget-search ul.better-autocomplete {
+        max-height: 420px !important;
+        margin-top: 0.55rem;
+        border: 2px solid #DEEDED;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 16px 36px rgb(7 24 34 / 15%);
+        overflow-y: auto;
+        font-size: 1.35rem !important;
+      }
+
+      .widget-detached > .widget-search ul.better-autocomplete li,
+      .widget-detached > .widget-search ul.better-autocomplete a {
+        line-height: 1.35;
+        padding-top: 0.62rem;
+        padding-bottom: 0.62rem;
+      }
+
+      .widget-detached > .widget-search ul.better-autocomplete ul,
+      .widget-detached > .widget-search ul.better-autocomplete li,
+      .widget-detached > .widget-search ul.better-autocomplete li *,
+      .widget-detached > .widget-search ul.better-autocomplete a,
+      .widget-detached > .widget-search ul.better-autocomplete span {
+        font-size: 1.35rem !important;
+      }
+
+      .time-box {
+        font-size: clamp(1.5rem, 2.4vw, 2.6rem);
+      }
+
+      .time-box input {
+        width: 2.5ch;
+        min-width: 2.5ch;
+      }
+
+      .preview canvas {
+        width: clamp(80px, 8vw, 160px);
+        height: clamp(80px, 8vw, 160px);
+        border-radius: 10px;
+      }
+
+      .preview-panel {
+        gap: 18px;
+        padding: 18px;
+        border: 2px solid #DEEDED;
+        border-radius: 16px;
+      }
+
+      .preview-top {
+        gap: 18px;
+      }
+
+      .preview-lines {
+        gap: 2px;
+      }
+
+      .preview-line {
+        gap: 8px;
+        padding: 8px 0;
+        font-size: 1.32rem;
+        line-height: 1.2;
+      }
+
+      .preview-line:not(.preview-line--time) {
+        font-size: 1.38rem;
+      }
+
+      .preview-line--time {
+        column-gap: 12px;
+      }
+
+      .preview-line strong {
+        font-size: 1.42rem;
+      }
+
+      .coverage-readout {
+        font-size: 1.34rem;
+      }
+
+      .metric-value {
+        font-size: 1.38rem;
+      }
+
+      .legend {
+        border-radius: 8px;
+        border: 1.5px solid #DEEDED;
+        padding: 0.5rem 0.9rem;
+        font-size: 1.08rem;
+        gap: 0.6rem;
+        margin: 0 auto 0.6rem;
+      }
+
+      .legend-divider {
+        height: 1.8em;
+        border-left: 1.5px solid #DEEDED;
+      }
+
+      .map-copyright-slot {
+        font-size: 1.08rem;
+      }
+
+      .map-copyright-slot .widget-map-copyright {
+        font-size: 1.08rem;
+      }
+
+      .time-actions {
+        border-top: 2px solid #DEEDED;
+        padding-top: 12px;
+      }
+
+      .time-actions button {
+        border-right: 2px solid #DEEDED;
+        padding: 0.7rem 0.9rem;
+        min-height: 72px;
+        border-radius: 0;
+        font-size: 1.08rem;
+      }
+
+      .time-actions button:first-child {
+        border-bottom-left-radius: 8px;
+      }
+
+      .time-actions button:last-child {
+        border-bottom-right-radius: 8px;
+      }
+
+      .time-actions button .btn-label {
+        font-size: 0.95rem;
+        letter-spacing: 0.08em;
+      }
+
+      .time-actions button .btn-time {
+        font-size: 1.45rem;
+        letter-spacing: 0.02em;
+      }
+
+      .time-actions button .btn-peak-pct {
+        font-size: 1.2rem;
+      }
+
+      .map-crosshair {
+        width: 12px;
+        height: 12px;
+      }
+
+      .map-crosshair::after {
+        inset: -10px;
+        border: 3px solid #ffffff;
+      }
+
+      .dot {
+        width: 0.85rem;
+        height: 0.85rem;
       }
     }
   </style>
@@ -819,7 +1182,7 @@
 
       <div class="panel-header">
         <p class="sub">Den 12. august 2026 kan du opleve en <a class="source-link" href="https://lex.dk/solform%C3%B8rkelsen_den_12._august_2026" target="_blank" rel="noopener">delvis solformørkelse i Danmark</a> mellem kl. 19 og 21, med op til 85 % dækning.</p>
-        <p class="sub">Udforsk kortet eller søg på din adresse herunder for at se, hvor du har frit udsyn til solformørkelsen - uden skygger fra omkringliggende bygninger og terræn.</p>
+        <p class="sub">Udforsk kortet eller søg på din adresse herunder for at se, hvor du har frit udsyn til solformørkelsen - uden <a class="source-link" href="https://septima.dk/nyheder/nyhed-skyggekort-labs" target="_blank" rel="noopener">skygger fra omkringliggende bygninger og terræn</a>.</p>
         <p class="sub warning-text">Husk solformørkelsesbriller under hele formørkelsen</p>
       </div>
 
@@ -896,7 +1259,9 @@
   <div class="desktop-corner">
     <div class="desktop-corner__copyright"></div>
     <div class="desktop-corner__logo-slot">
-      <img class="logo" src="assets/images/logo-color-black.png" alt="Septima" />
+      <a href="https://septima.dk/" target="_blank" rel="noopener" aria-label="Besøg Septima.dk">
+        <img class="logo" src="assets/images/logo-color-black.png" alt="Septima" />
+      </a>
     </div>
   </div>
 
@@ -1494,8 +1859,9 @@
         return `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="#111111" stroke-width="${strokeWidth}" stroke-linecap="butt" />`;
       }).join('');
 
-      const clockLabelRadius = radius - (ringWidth * 0.5) - (isMobileLayout ? 26 : 28);
-      const clockLabelFontSize = isMobileLayout ? 15 : 17;
+      const isUltraWide = window.matchMedia('(min-width: 2560px)').matches;
+      const clockLabelRadius = radius - (ringWidth * 0.5) - (isMobileLayout ? 26 : (isUltraWide ? 32 : 28));
+      const clockLabelFontSize = isMobileLayout ? 15 : (isUltraWide ? 16 : 17);
       const majorClockLabels = [
         { hour: 0, label: '00:00' },
         { hour: 6, label: '06:00' },
@@ -1565,7 +1931,7 @@
       const altitudeDisplay = Math.abs(sample.altitude) < 0.05 ? 0 : sample.altitude;
       ui.altitude.textContent = `${altitudeDisplay.toFixed(1)} grader`;
       const coveragePercent = (((preview?.exactCoverage ?? preview?.coverage) || 0) * 100);
-      ui.coverage.textContent = `${coveragePercent.toFixed(1)}% daekning`;
+      ui.coverage.textContent = `${coveragePercent.toFixed(1)}% dækning`;
       ui.coverage.classList.toggle('has-coverage', coveragePercent > 0);
     }
 
@@ -1894,16 +2260,18 @@
 
     function moveSupportBranding() {
       const logo = document.querySelector('.logo');
+      const logoLink = logo ? logo.closest('a') : null;
       const copyright = document.querySelector('.widget-map-copyright');
       const desktopLogoSlot = document.querySelector('.desktop-corner__logo-slot');
       const stageCopyrightSlot = document.querySelector('.map-copyright-slot');
       const mobileLogoSlot = document.querySelector('.mobile-sticky-header__logo-slot');
-      const isMobileLayout = window.matchMedia('(max-width: 1080px)').matches;
+      const isPortraitLayout = window.matchMedia('(orientation: portrait)').matches;
 
       if (logo) {
-        const targetLogoSlot = isMobileLayout ? mobileLogoSlot : desktopLogoSlot;
-        if (targetLogoSlot && logo.parentElement !== targetLogoSlot) {
-          targetLogoSlot.appendChild(logo);
+        const targetLogoSlot = isPortraitLayout ? mobileLogoSlot : desktopLogoSlot;
+        const logoNode = logoLink || logo;
+        if (targetLogoSlot && logoNode.parentElement !== targetLogoSlot) {
+          targetLogoSlot.appendChild(logoNode);
         }
       }
 
@@ -1918,16 +2286,35 @@
     function applyMobileMapDpiMode() {
       const mapCutout = document.querySelector('.map-cutout');
       if (!mapCutout) return;
-      const isMobile = window.matchMedia('(max-width: 1080px)').matches;
-      mapCutout.classList.toggle('mobile-dpi-out', isMobile);
-      mapCutout.classList.toggle('desktop-dpi-out', !isMobile);
+      const isMobileLayout = window.matchMedia('(max-width: 1080px)').matches;
+      const isPortraitTablet = window.matchMedia('(max-width: 1080px) and (min-width: 700px) and (orientation: portrait)').matches;
+      const isMobilePhone = isMobileLayout && !isPortraitTablet;
+
+      mapCutout.classList.toggle('mobile-dpi-out', isMobilePhone);
+      mapCutout.classList.toggle('tablet-portrait-dpi-out', isPortraitTablet);
+      mapCutout.classList.toggle('desktop-dpi-out', !isMobileLayout);
+    }
+
+    function parseMapHash() {
+      try {
+        const raw = decodeURIComponent(window.location.hash.slice(1));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y) && Number.isFinite(parsed.zoom)) {
+          return { x: parsed.x, y: parsed.y, zoomLevel: parsed.zoom };
+        }
+      } catch {
+        // ignore malformed hash
+      }
+      return null;
     }
 
     function bindMap() {
       widget.on('ready', async () => {
         applyMobileMapDpiMode();
 
-        widget.setView({
+        const hashView = parseMapHash();
+        widget.setView(hashView ?? {
           zoomLevel: state.mapZoom,
           x: state.mapCenter25832[0],
           y: state.mapCenter25832[1],
@@ -1951,6 +2338,11 @@
         state.lngLat = await centerToLngLat(mapstate.center);
         refreshSolarAndRender(true);
         moveSupportBranding();
+      });
+
+      window.addEventListener('hashchange', () => {
+        const view = parseMapHash();
+        if (view) widget.setView(view);
       });
     }
 
