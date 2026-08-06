@@ -625,7 +625,7 @@
 
     .time-actions {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 30% 40% 30%;
       gap: 0;
       width: 100%;
       border-top: 1px solid #DEEDED;
@@ -665,7 +665,7 @@
     }
 
     .time-actions button .btn-label {
-      font-size: 0.66rem;
+      font-size: 0.6rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       opacity: 1;
@@ -930,7 +930,10 @@
 
     const TIME_ZONE = 'Europe/Copenhagen';
     const DATE_STR = '2026-08-12';
-    const DEFAULT_SELECTED_MINUTE = 20 * 60;
+    const DEFAULT_SELECTED_SECOND = 20 * 60 * 60;
+    const COVERAGE_DISPLAY_ZERO_EPSILON = 0.0005;
+    const END_TIME_SEARCH_MAX_MINUTES = 120;
+    const SAMPLE_STEP_SECONDS = 60;
 
     function getCurrentLocalMinuteOfDay() {
       const now = new Date();
@@ -941,7 +944,7 @@
       lngLat: [12.539792090268461, 55.70698126629835],
       mapCenter25832: [724282.08, 6178621.15],
       mapZoom: 11,
-      selectedMinute: DEFAULT_SELECTED_MINUTE,
+      selectedSecond: DEFAULT_SELECTED_SECOND,
       solar: null,
       drag: false,
       hasLoadedInitialWms: false,
@@ -991,19 +994,39 @@
       return d;
     }
 
-    function localMinutesToClock(minutes) {
-      const m = ((Math.round(minutes) % 1440) + 1440) % 1440;
-      const h = Math.floor(m / 60);
-      const mm = m % 60;
+    function localSecondsToClock(seconds, includeSeconds = false) {
+      const s = ((Math.round(seconds) % 86400) + 86400) % 86400;
+      const h = Math.floor(s / 3600);
+      const mm = Math.floor((s % 3600) / 60);
+      const ss = s % 60;
+      if (includeSeconds) {
+        return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+      }
       return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
     }
 
-    function parseClockToMinutes(hourText, minuteText) {
+    function alignSecondToMinute(secondOfDay, mode = 'floor') {
+      const s = ((Math.round(secondOfDay) % 86400) + 86400) % 86400;
+      const minuteBase = Math.floor(s / 60) * 60;
+      const secondRemainder = s - minuteBase;
+
+      if (mode === 'ceil') {
+        return secondRemainder === 0 ? minuteBase : Math.min(86399, minuteBase + 60);
+      }
+
+      if (mode === 'round') {
+        return secondRemainder >= 30 ? Math.min(86399, minuteBase + 60) : minuteBase;
+      }
+
+      return minuteBase;
+    }
+
+    function parseClockToSeconds(hourText, minuteText) {
       const h = Number.parseInt(String(hourText || '').replace(/\D/g, ''), 10);
       const m = Number.parseInt(String(minuteText || '').replace(/\D/g, ''), 10);
       if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
       if (h < 0 || h > 23 || m < 0 || m > 59) return null;
-      return h * 60 + m;
+      return (h * 3600) + (m * 60);
     }
 
     function parseIsoDateParts(dateString) {
@@ -1017,9 +1040,9 @@
       };
     }
 
-    function getTimeOfInterestForLocalMinute(minuteOfDay) {
-      const clock = localMinutesToClock(minuteOfDay);
-      const localMoment = zonedTimeToDate(DATE_STR, `${clock}:00`, TIME_ZONE);
+    function getTimeOfInterestForLocalSecond(secondOfDay) {
+      const clock = localSecondsToClock(secondOfDay, true);
+      const localMoment = zonedTimeToDate(DATE_STR, clock, TIME_ZONE);
       if (!localMoment) return null;
 
       return TimeOfInterest.fromTime(
@@ -1032,8 +1055,8 @@
       );
     }
 
-    function getSunHorizontalAtMinute(minuteOfDay, observerLocation) {
-      const toi = getTimeOfInterestForLocalMinute(minuteOfDay);
+    function getSunHorizontalAtSecond(secondOfDay, observerLocation) {
+      const toi = getTimeOfInterestForLocalSecond(secondOfDay);
       if (!toi) return null;
 
       const sun = Sun.create(toi);
@@ -1077,11 +1100,63 @@
       return null;
     }
 
-    function dateToZoneMinutes(date, timeZone = TIME_ZONE) {
+    function dateToZoneSeconds(date, timeZone = TIME_ZONE, rounding = 'trunc') {
       if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
       const parts = getTimeZoneParts(date, timeZone);
       if (!Number.isFinite(parts.hours) || !Number.isFinite(parts.minutes)) return null;
-      return (parts.hours * 60) + parts.minutes;
+
+      const secondValue = (parts.hours * 3600) + (parts.minutes * 60) + (Number.isFinite(parts.seconds) ? parts.seconds : 0);
+
+      if (rounding === 'floor') return Math.floor(secondValue);
+      if (rounding === 'ceil') return Math.ceil(secondValue);
+      if (rounding === 'round') return Math.round(secondValue);
+      return Math.trunc(secondValue);
+    }
+
+    function resolveHorizonBoundarySecond(date, observerLocation, edge = 'start') {
+      const secondValue = dateToZoneSeconds(date, TIME_ZONE, 'trunc');
+      if (!Number.isFinite(secondValue)) return null;
+
+      const candidates = [];
+      for (let delta = -120; delta <= 120; delta += 1) {
+        const sec = secondValue + delta;
+        if (sec < 0 || sec > 86399) continue;
+        candidates.push(sec);
+      }
+
+      let bestVisible = null;
+      let bestAny = null;
+
+      for (const second of candidates) {
+        const position = getSunHorizontalAtSecond(second, observerLocation);
+        if (!position) continue;
+
+        const altitude = Number(position.altitude);
+        if (!Number.isFinite(altitude)) continue;
+
+        const candidate = {
+          second,
+          altitude,
+          score: Math.abs(altitude),
+        };
+
+        if (!bestAny || candidate.score < bestAny.score) {
+          bestAny = candidate;
+        }
+
+        if (altitude >= 0) {
+          if (
+            !bestVisible
+            || candidate.score < bestVisible.score
+            || (candidate.score === bestVisible.score && edge === 'start' && candidate.second < bestVisible.second)
+            || (candidate.score === bestVisible.score && edge === 'end' && candidate.second > bestVisible.second)
+          ) {
+            bestVisible = candidate;
+          }
+        }
+      }
+
+      return bestVisible?.second ?? bestAny?.second ?? secondValue;
     }
 
     function getTimeZoneFormatter(timeZone) {
@@ -1150,9 +1225,9 @@
       return `${dateObj.getUTCFullYear()}-${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}-${String(dateObj.getUTCDate()).padStart(2, '0')}T${String(dateObj.getUTCHours()).padStart(2, '0')}:${String(dateObj.getUTCMinutes()).padStart(2, '0')}:${String(dateObj.getUTCSeconds()).padStart(2, '0')}+00:00`;
     }
 
-    function buildMapTimeParam(localMinute) {
-      const clock = localMinutesToClock(localMinute);
-      const localMoment = zonedTimeToDate(DATE_STR, `${clock}:00`, TIME_ZONE);
+    function buildMapTimeParam(localSecond) {
+      const clock = localSecondsToClock(localSecond, true);
+      const localMoment = zonedTimeToDate(DATE_STR, clock, TIME_ZONE);
       const localMidnight = zonedTimeToDate(DATE_STR, '00:00:00', TIME_ZONE);
       if (!localMoment || !localMidnight) return null;
       return `${formatUtcOffset(localMoment)}/${formatUtcOffset(localMidnight)}`;
@@ -1171,38 +1246,49 @@
       const sunsetDate = timeOfInterestToDate(sun.getApparentSet(observerLocation));
       const transitDate = timeOfInterestToDate(sun.getTransit(observerLocation));
 
-      const sunriseMin = dateToZoneMinutes(sunriseDate, TIME_ZONE);
-      const sunsetMin = dateToZoneMinutes(sunsetDate, TIME_ZONE);
-      const noonMinRaw = dateToZoneMinutes(transitDate, TIME_ZONE);
+      const sunriseSec = resolveHorizonBoundarySecond(sunriseDate, observerLocation, 'start');
+      const sunsetSec = resolveHorizonBoundarySecond(sunsetDate, observerLocation, 'end');
+      const noonSecRaw = dateToZoneSeconds(transitDate, TIME_ZONE);
 
-      if (!Number.isFinite(sunriseMin) || !Number.isFinite(sunsetMin)) {
+      if (!Number.isFinite(sunriseSec) || !Number.isFinite(sunsetSec)) {
         return null;
       }
 
-      const noonMin = Number.isFinite(noonMinRaw)
-        ? noonMinRaw
-        : Math.round((sunriseMin + sunsetMin) / 2);
+      const noonSec = Number.isFinite(noonSecRaw)
+        ? noonSecRaw
+        : Math.round((sunriseSec + sunsetSec) / 2);
 
       const samples = [];
-      for (let m = sunriseMin; m <= sunsetMin; m += 1) {
-        const position = getSunHorizontalAtMinute(m, observerLocation);
+      for (let s = sunriseSec; s <= sunsetSec; s += SAMPLE_STEP_SECONDS) {
+        const position = getSunHorizontalAtSecond(s, observerLocation);
         if (!position) continue;
         samples.push({
-          minute: m,
+          second: s,
           azNorth: position.azNorth,
           altitude: position.altitude,
         });
+      }
+
+      if (!samples.length || samples[samples.length - 1].second !== sunsetSec) {
+        const sunsetPosition = getSunHorizontalAtSecond(sunsetSec, observerLocation);
+        if (sunsetPosition) {
+          samples.push({
+            second: sunsetSec,
+            azNorth: sunsetPosition.azNorth,
+            altitude: sunsetPosition.altitude,
+          });
+        }
       }
 
       if (!samples.length) return null;
 
       const sunriseAz = samples[0]?.azNorth ?? 0;
       const sunsetAz = samples[samples.length - 1]?.azNorth ?? 0;
-      const noonSample = samples.reduce((best, s) => (Math.abs(s.minute - noonMin) < Math.abs(best.minute - noonMin) ? s : best), samples[0]);
+      const noonSample = samples.reduce((best, s) => (Math.abs(s.second - noonSec) < Math.abs(best.second - noonSec) ? s : best), samples[0]);
 
-      let eclipseStartMin = null;
-      let eclipsePeakMin = null;
-      let eclipseEndMin = null;
+      let eclipseStartSec = null;
+      let eclipsePeakSec = null;
+      let eclipseEndSec = null;
 
       try {
         const elements = Catalogue.getBesselianElements(DATE_STR);
@@ -1215,38 +1301,38 @@
         const cMax = timeOfInterestToDate(contacts.max);
         const c4 = timeOfInterestToDate(contacts.c4);
 
-        eclipseStartMin = dateToZoneMinutes(c1, TIME_ZONE);
-        eclipsePeakMin = dateToZoneMinutes(cMax, TIME_ZONE);
-        eclipseEndMin = dateToZoneMinutes(c4, TIME_ZONE);
+        eclipseStartSec = dateToZoneSeconds(c1, TIME_ZONE, 'floor');
+        eclipsePeakSec = dateToZoneSeconds(cMax, TIME_ZONE, 'round');
+        eclipseEndSec = dateToZoneSeconds(c4, TIME_ZONE, 'ceil');
 
-        if (Number.isFinite(eclipseStartMin) && Number.isFinite(eclipseEndMin)) {
-          eclipseStartMin = clamp(eclipseStartMin, sunriseMin, sunsetMin);
-          eclipseEndMin = clamp(eclipseEndMin, sunriseMin, sunsetMin);
-          if (Number.isFinite(eclipsePeakMin)) {
-            eclipsePeakMin = clamp(eclipsePeakMin, eclipseStartMin, eclipseEndMin);
+        if (Number.isFinite(eclipseStartSec) && Number.isFinite(eclipseEndSec)) {
+          eclipseStartSec = clamp(eclipseStartSec, sunriseSec, sunsetSec);
+          eclipseEndSec = clamp(eclipseEndSec, sunriseSec, sunsetSec);
+          if (Number.isFinite(eclipsePeakSec)) {
+            eclipsePeakSec = clamp(eclipsePeakSec, eclipseStartSec, eclipseEndSec);
           }
-          if (eclipseEndMin < eclipseStartMin) {
-            const tmp = eclipseStartMin;
-            eclipseStartMin = eclipseEndMin;
-            eclipseEndMin = tmp;
+          if (eclipseEndSec < eclipseStartSec) {
+            const tmp = eclipseStartSec;
+            eclipseStartSec = eclipseEndSec;
+            eclipseEndSec = tmp;
           }
         }
       } catch (_error) {
-        eclipseStartMin = null;
-        eclipsePeakMin = null;
-        eclipseEndMin = null;
+        eclipseStartSec = null;
+        eclipsePeakSec = null;
+        eclipseEndSec = null;
       }
 
       return {
-        sunriseMin,
-        sunsetMin,
-        noonMin,
+        sunriseSec,
+        sunsetSec,
+        noonSec,
         sunriseAz,
         sunsetAz,
         noonAz: noonSample?.azNorth ?? 180,
-        eclipseStartMin,
-        eclipsePeakMin,
-        eclipseEndMin,
+        eclipseStartSec,
+        eclipsePeakSec,
+        eclipseEndSec,
         samples,
       };
     }
@@ -1266,10 +1352,22 @@
       return best;
     }
 
-    function sampleForMinute(minute) {
+    function sampleForSecond(second) {
       if (!state.solar || !state.solar.samples.length) return null;
-      const clamped = clamp(Math.round(minute), state.solar.sunriseMin, state.solar.sunsetMin);
-      return state.solar.samples[clamped - state.solar.sunriseMin] || state.solar.samples[0];
+      const clamped = clamp(Math.round(second), state.solar.sunriseSec, state.solar.sunsetSec);
+      let best = state.solar.samples[0];
+      let bestDelta = Math.abs(best.second - clamped);
+
+      for (let i = 1; i < state.solar.samples.length; i += 1) {
+        const candidate = state.solar.samples[i];
+        const delta = Math.abs(candidate.second - clamped);
+        if (delta < bestDelta) {
+          best = candidate;
+          bestDelta = delta;
+        }
+      }
+
+      return best;
     }
 
     function polarToCartesian(cx, cy, r, angleDeg) {
@@ -1298,7 +1396,7 @@
       const isMobileLayout = window.matchMedia('(max-width: 1080px)').matches;
       const ringWidth = isMobileLayout ? baseRingWidth : baseRingWidth * 0.7;
 
-      const sample = sampleForMinute(state.selectedMinute);
+      const sample = sampleForSecond(state.selectedSecond);
       if (!state.solar || !sample) {
         svg.innerHTML = '';
         return;
@@ -1375,7 +1473,7 @@
       const [lng, lat] = state.lngLat;
       const observerLocation = Location.create(lat, lng, 0);
       const azimuthForMinute = (minuteOfDay) => {
-        const position = getSunHorizontalAtMinute(minuteOfDay, observerLocation);
+        const position = getSunHorizontalAtSecond(minuteOfDay * 60, observerLocation);
         return position ? position.azNorth : 0;
       };
 
@@ -1409,8 +1507,8 @@
         return `<text x="${pos.x}" y="${pos.y}" fill="#111111" font-size="${clockLabelFontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" style="font-family: 'proxima-nova', 'Open Sans', sans-serif; letter-spacing: 0.01em;">${label}</text>`;
       }).join('');
 
-      const eclipseStartSample = Number.isFinite(state.solar.eclipseStartMin) ? sampleForMinute(state.solar.eclipseStartMin) : null;
-      const eclipseEndSample = Number.isFinite(state.solar.eclipseEndMin) ? sampleForMinute(state.solar.eclipseEndMin) : null;
+      const eclipseStartSample = Number.isFinite(state.solar.eclipseStartSec) ? sampleForSecond(state.solar.eclipseStartSec) : null;
+      const eclipseEndSample = Number.isFinite(state.solar.eclipseEndSec) ? sampleForSecond(state.solar.eclipseEndSec) : null;
       const eclipsePath = (eclipseStartSample && eclipseEndSample)
         ? arcPath(c, c, radius, eclipseStartSample.azNorth, eclipseEndSample.azNorth, noonOnCw)
         : null;
@@ -1447,15 +1545,15 @@
       `;
     }
 
-    function updateTimeInputs(minuteOfDay) {
-      const clock = localMinutesToClock(minuteOfDay);
+    function updateTimeInputs(secondOfDay) {
+      const clock = localSecondsToClock(secondOfDay);
       const [h, m] = clock.split(':');
       ui.hour.value = h;
       ui.minute.value = m;
     }
 
     function updatePreview(sample) {
-      const clock = localMinutesToClock(state.selectedMinute);
+      const clock = localSecondsToClock(state.selectedSecond, true);
       const preview = renderEclipsePreview(ui.preview, {
         lngLat: state.lngLat,
         date: DATE_STR,
@@ -1464,14 +1562,15 @@
       });
 
       ui.azimuth.textContent = `${sample.azNorth.toFixed(1)} grader`;
-      ui.altitude.textContent = `${sample.altitude.toFixed(1)} grader`;
+      const altitudeDisplay = Math.abs(sample.altitude) < 0.05 ? 0 : sample.altitude;
+      ui.altitude.textContent = `${altitudeDisplay.toFixed(1)} grader`;
       const coveragePercent = (((preview?.exactCoverage ?? preview?.coverage) || 0) * 100);
       ui.coverage.textContent = `${coveragePercent.toFixed(1)}% daekning`;
       ui.coverage.classList.toggle('has-coverage', coveragePercent > 0);
     }
 
-    function estimateCoverageAtMinute(minute) {
-      if (!Number.isFinite(minute)) return null;
+    function estimateCoverageAtSecond(second) {
+      if (!Number.isFinite(second)) return null;
       if (!state.coverageProbeCanvas) {
         state.coverageProbeCanvas = document.createElement('canvas');
         state.coverageProbeCanvas.width = 200;
@@ -1481,25 +1580,65 @@
       const result = renderEclipsePreview(probe, {
         lngLat: state.lngLat,
         date: DATE_STR,
-        time: localMinutesToClock(minute),
+        time: localSecondsToClock(second, true),
         timeZone: TIME_ZONE,
       });
       const value = (result?.exactCoverage ?? result?.coverage);
       return Number.isFinite(value) ? value : null;
     }
 
+    function resolveDisplayEndSecond() {
+      if (!state.solar) return null;
+
+      const fallbackSecond = state.solar.sunsetSec;
+      const nominalEndSecond = Number.isFinite(state.solar.eclipseEndSec)
+        ? state.solar.eclipseEndSec
+        : fallbackSecond;
+
+      const startSecond = clamp(Math.round(nominalEndSecond), state.solar.sunriseSec, state.solar.sunsetSec);
+      const maxSecond = Math.min(state.solar.sunsetSec, startSecond + (END_TIME_SEARCH_MAX_MINUTES * 60));
+
+      let bestSecond = startSecond;
+      let bestCoverage = Number.POSITIVE_INFINITY;
+
+      for (let second = startSecond; second <= maxSecond; second += 60) {
+        const coverage = estimateCoverageAtSecond(second);
+        if (!Number.isFinite(coverage)) continue;
+
+        if (coverage < bestCoverage) {
+          bestCoverage = coverage;
+          bestSecond = second;
+        }
+
+        // Align end-time with what's shown in UI (0.0% at 1 decimal).
+        if (coverage <= COVERAGE_DISPLAY_ZERO_EPSILON) {
+          const refineStart = Math.max(startSecond, second - 60);
+          for (let refineSecond = refineStart; refineSecond <= second; refineSecond += 1) {
+            const refineCoverage = estimateCoverageAtSecond(refineSecond);
+            if (Number.isFinite(refineCoverage) && refineCoverage <= COVERAGE_DISPLAY_ZERO_EPSILON) {
+              return refineSecond;
+            }
+          }
+          return second;
+        }
+      }
+
+      return bestSecond;
+    }
+
     function updatePresetButtonInfo() {
       if (!state.solar) return;
 
-      const startMinute = Number.isFinite(state.solar.eclipseStartMin) ? state.solar.eclipseStartMin : state.solar.sunriseMin;
-      const peakMinute = Number.isFinite(state.solar.eclipsePeakMin) ? state.solar.eclipsePeakMin : state.solar.noonMin;
-      const endMinute = Number.isFinite(state.solar.eclipseEndMin) ? state.solar.eclipseEndMin : state.solar.sunsetMin;
+      const startSecond = Number.isFinite(state.solar.eclipseStartSec) ? state.solar.eclipseStartSec : state.solar.sunriseSec;
+      const peakSecond = Number.isFinite(state.solar.eclipsePeakSec) ? state.solar.eclipsePeakSec : state.solar.noonSec;
+      const endSecond = resolveDisplayEndSecond();
+      const peakDisplaySecond = alignSecondToMinute(peakSecond, 'round');
 
-      ui.btnStartTime.textContent = localMinutesToClock(startMinute);
-      ui.btnPeakTime.textContent = localMinutesToClock(peakMinute);
-      ui.btnEndTime.textContent = localMinutesToClock(endMinute);
+      ui.btnStartTime.textContent = localSecondsToClock(startSecond);
+      ui.btnPeakTime.textContent = localSecondsToClock(peakDisplaySecond);
+      ui.btnEndTime.textContent = localSecondsToClock(Number.isFinite(endSecond) ? endSecond : state.solar.sunsetSec);
 
-      // const peakCoverage = estimateCoverageAtMinute(peakMinute);
+      // const peakCoverage = estimateCoverageAtSecond(peakSecond);
       // ui.btnPeakPct.textContent = peakCoverage == null ? '--.-%' : `${(peakCoverage * 100).toFixed(1)}%`;
     }
 
@@ -1509,7 +1648,7 @@
         return;
       }
 
-      const value = buildMapTimeParam(state.selectedMinute);
+      const value = buildMapTimeParam(state.selectedSecond);
       if (!value) return;
       widget.updateLayerParams('skygge-kort', { TIME: value });
       state.wmsPendingUpdate = false;
@@ -1620,12 +1759,12 @@
       state.hasBoundWmsLock = true;
     }
 
-    function setSelectedMinute(newMinute, fromInput = false, updateWms = false, forceWms = false) {
+    function setSelectedSecond(newSecond, fromInput = false, updateWms = false, forceWms = false) {
       if (!state.solar) return;
-      const clamped = clamp(Math.round(newMinute), state.solar.sunriseMin, state.solar.sunsetMin);
-      state.selectedMinute = clamped;
+      const clamped = clamp(Math.round(newSecond), state.solar.sunriseSec, state.solar.sunsetSec);
+      state.selectedSecond = clamped;
 
-      const sample = sampleForMinute(clamped);
+      const sample = getSunHorizontalAtSecond(clamped, Location.create(state.lngLat[1], state.lngLat[0], 0)) || sampleForSecond(clamped);
       if (!sample) return;
 
       if (!fromInput) updateTimeInputs(clamped);
@@ -1637,17 +1776,17 @@
       }
     }
 
-    function refreshSolarAndRender(keepMinute = true) {
+    function refreshSolarAndRender(keepSecond = true) {
       state.solar = computeSolarData();
       if (!state.solar || !state.solar.samples.length) return;
 
-      if (keepMinute) {
-        state.selectedMinute = clamp(state.selectedMinute, state.solar.sunriseMin, state.solar.sunsetMin);
+      if (keepSecond) {
+        state.selectedSecond = clamp(state.selectedSecond, state.solar.sunriseSec, state.solar.sunsetSec);
       } else {
-        state.selectedMinute = clamp(state.solar.noonMin, state.solar.sunriseMin, state.solar.sunsetMin);
+        state.selectedSecond = clamp(state.solar.noonSec, state.solar.sunriseSec, state.solar.sunsetSec);
       }
 
-      setSelectedMinute(state.selectedMinute);
+      setSelectedSecond(state.selectedSecond);
       updatePresetButtonInfo();
     }
 
@@ -1666,7 +1805,7 @@
       const targetAngle = ringPointerToAngle(event);
       const nearest = nearestSampleForAngle(targetAngle);
       if (!nearest) return;
-      setSelectedMinute(nearest.minute, false, true, false);
+      setSelectedSecond(nearest.second, false, true, false);
     }
 
     function bindRingPointer() {
@@ -1707,12 +1846,14 @@
       };
 
       const commit = () => {
-        const minutes = parseClockToMinutes(ui.hour.value, ui.minute.value);
-        if (minutes == null) {
-          updateTimeInputs(state.selectedMinute);
+        const previousSecond = state.selectedSecond;
+        const seconds = parseClockToSeconds(ui.hour.value, ui.minute.value);
+        if (seconds == null) {
+          updateTimeInputs(previousSecond);
           return;
         }
-        setSelectedMinute(minutes, true, true, true);
+        setSelectedSecond(seconds, true, true, true);
+        updateTimeInputs(state.selectedSecond);
       };
 
       ui.hour.addEventListener('input', () => {
@@ -1816,27 +1957,29 @@
     function bindPresetButtons() {
       ui.btnSunrise.addEventListener('click', () => {
         if (!state.solar) return;
-        const minute = Number.isFinite(state.solar.eclipseStartMin) ? state.solar.eclipseStartMin : state.solar.sunriseMin;
-        setSelectedMinute(minute, false, true, true);
+        const second = Number.isFinite(state.solar.eclipseStartSec) ? state.solar.eclipseStartSec : state.solar.sunriseSec;
+        setSelectedSecond(second, false, true, true);
       });
 
       ui.btnNoon.addEventListener('click', () => {
         if (!state.solar) return;
-        const minute = Number.isFinite(state.solar.eclipsePeakMin) ? state.solar.eclipsePeakMin : state.solar.noonMin;
-        setSelectedMinute(minute, false, true, true);
+        const second = Number.isFinite(state.solar.eclipsePeakSec) ? state.solar.eclipsePeakSec : state.solar.noonSec;
+        const roundedToMinute = alignSecondToMinute(second, 'round');
+        setSelectedSecond(roundedToMinute, false, true, true);
       });
 
       ui.btnSunset.addEventListener('click', () => {
         if (!state.solar) return;
-        const minute = Number.isFinite(state.solar.eclipseEndMin) ? state.solar.eclipseEndMin : state.solar.sunsetMin;
-        setSelectedMinute(minute, false, true, true);
+        const second = resolveDisplayEndSecond();
+        if (!Number.isFinite(second)) return;
+        setSelectedSecond(second, false, true, true);
       });
     }
 
     function boot() {
       moveSupportBranding();
       applyMobileMapDpiMode();
-      updateTimeInputs(state.selectedMinute);
+      updateTimeInputs(state.selectedSecond);
       window.addEventListener('resize', moveSupportBranding);
       window.addEventListener('resize', applyMobileMapDpiMode);
       window.addEventListener('orientationchange', applyMobileMapDpiMode);
