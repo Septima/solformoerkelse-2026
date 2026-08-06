@@ -13,6 +13,9 @@
 <!-- End Matomo Tag Manager -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://use.typekit.net" crossorigin>
+  <link rel="preconnect" href="https://p.typekit.net" crossorigin>
+  <link rel="stylesheet" href="https://use.typekit.net/dqr0gee.css">
   <title>Solformørkelse 2026</title>
   <style>
     :root {
@@ -91,13 +94,16 @@
       right: 1rem;
       bottom: 1rem;
       left: 1rem;
+      display: flex;
+      flex-direction: column;
       pointer-events: none;
       z-index: 40;
     }
 
     .desktop-corner__logo-slot,
     .mobile-sticky-header__logo-slot,
-    .map-copyright-slot {
+    .map-copyright-slot,
+    .desktop-corner__copyright {
       pointer-events: auto;
     }
 
@@ -108,6 +114,25 @@
       display: flex;
       justify-content: flex-start;
       align-items: center;
+    }
+
+    .desktop-corner__copyright {
+      position: static;
+      margin-top: auto;
+      margin-left: auto;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      max-width: min(26rem, calc(100vw - 3rem));
+      font-size: 0.875rem;
+      text-align: right;
+    }
+
+    .desktop-corner__copyright .widget-map-copyright {
+      background: rgb(240 245 239 / 92%);
+      padding: 0.35rem 0.6rem;
+      border-radius: 0.5rem;
+      box-shadow: none;
     }
 
     .logo {
@@ -145,22 +170,43 @@
       line-height: 1.03;
       letter-spacing: -0.02em;
       font-weight: 700;
+      color: #0F3B53;
     }
 
     .sub {
-      color: var(--ink);
+      color: #676B68;
       font-size: 1rem;
       line-height: 1.43;
-      opacity: 0.92;
+      opacity: 1;
     }
 
     .warning-text {
+      color: #4F504F;
       font-weight: 700;
+      display: flex;
+      align-items: center;
+    }
+
+    .warning-text::before {
+      content: "";
+      display: inline-block;
+      flex: 0 0 auto;
+      width: 1.2em;
+      height: 1.2em;
+      margin-right: 0.38rem;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      background-image: url("data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%20512%20512%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cg%20fill%3D%27%234F504F%27%20transform%3D%27translate%2832%2042.666667%29%27%3E%3Cpath%20d%3D%27M246.312928%2C5.62892705%20C252.927596%2C9.40873724%20258.409564%2C14.8907053%20262.189374%2C21.5053731%20L444.667042%2C340.84129%20C456.358134%2C361.300701%20449.250007%2C387.363834%20428.790595%2C399.054926%20C422.34376%2C402.738832%20415.04715%2C404.676552%20407.622001%2C404.676552%20L42.6666667%2C404.676552%20C19.1025173%2C404.676552%200%2C385.574034%200%2C362.009885%20C0%2C354.584736%201.93772021%2C347.288125%205.62162594%2C340.84129%20L188.099293%2C21.5053731%20C199.790385%2C1.04596203%20225.853517%2C-6.06216498%20246.312928%2C5.62892705%20Z%20M224%2C272%20C208.761905%2C272%20197.333333%2C283.264%20197.333333%2C298.282667%20C197.333333%2C313.984%20208.415584%2C325.248%20224%2C325.248%20C239.238095%2C325.248%20250.666667%2C313.984%20250.666667%2C298.624%20C250.666667%2C283.264%20239.238095%2C272%20224%2C272%20Z%20M245.333333%2C106.666667%20L202.666667%2C106.666667%20L202.666667%2C234.666667%20L245.333333%2C234.666667%20L245.333333%2C106.666667%20Z%27/%3E%3C/g%3E%3C/svg%3E");
+      line-height: 1;
     }
 
     .source-link {
-      color: var(--ink);
-      font-size: 0.95rem;
+      color: inherit;
+      font-size: inherit;
+      text-decoration-line: underline;
+      text-decoration-color: currentColor;
+      text-decoration-thickness: from-font;
       text-underline-offset: 0.16rem;
     }
 
@@ -187,7 +233,7 @@
       width: 50px;
       height: 50px;
       border-radius: 12px;
-      border: 1px solid #b3b3b3;
+      border: 1px solid #DEEDED;
       background-color: white;
       font-size: 24px;
       display: flex;
@@ -202,6 +248,7 @@
 
     .widget-search-input {
       border-radius: 12px !important;
+      border: 1px solid #DEEDED !important;
     }
 
     .widget-container {
@@ -234,7 +281,7 @@
 
     .time-box {
       display: inline-flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 0.18rem;
       padding: 0;
       border: 0;
@@ -244,18 +291,22 @@
       font-size: 1.2rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
-      color: #114665;
+      color: #0F3B53;
       line-height: 1;
     }
 
     .time-box input {
       width: 2.25ch;
       min-width: 2.25ch;
+      height: 1em;
+      padding: 0;
       border: 0;
       outline: none;
       font: inherit;
+      line-height: 1;
       color: inherit;
       background: transparent;
+      display: block;
       text-align: center;
     }
 
@@ -290,11 +341,9 @@
       position: relative;
       width: min(100%, var(--stage-max));
       margin: 0 auto;
-      border: 1px solid #b3b3b3;
-      border-radius: 18px;
-      background:
-        radial-gradient(circle at 50% 50%, rgb(255 255 255 / 80%) 0%, rgb(255 255 255 / 0%) 60%),
-        var(--surface-bg);
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       overflow: hidden;
     }
 
@@ -311,6 +360,10 @@
       .map-frame-card {
         width: min(100%, var(--stage-max), calc(100dvh - 4rem));
         max-height: calc(100dvh - 4rem);
+      }
+
+      .stage-card {
+        align-self: center;
       }
     }
 
@@ -419,14 +472,13 @@
       gap: 0.45rem;
       align-items: center;
       justify-content: center;
-      border-radius: 0 0 6px 6px;
-      border: 1px solid #b3b3b3;
-      border-top: 0;
-      background: white;
+      border-radius: 6px;
+      border: 1px solid #DEEDED;
+      background: var(--surface-bg);
       padding: 0.34rem 0.65rem;
       font-size: 0.76rem;
       color: var(--muted);
-      margin: 0 auto -1px;
+      margin: 0 auto 0.45rem;
       pointer-events: none;
       white-space: nowrap;
       max-width: calc(100% - 1rem);
@@ -435,33 +487,40 @@
       transform: translateX(-50%);
     }
 
+    .legend-divider {
+      width: 0;
+      height: 1.45em;
+      border-left: 1px solid #DEEDED;
+      flex: 0 0 auto;
+    }
+
     .map-copyright-slot {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      z-index: 5;
+      position: static;
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
       font-size: 0.8rem;
       color: var(--muted);
+      margin-top: 0.2rem;
+      white-space: nowrap;
     }
 
     .map-copyright-slot .widget-map-copyright {
-      background: white;
-      border: 1px solid #b3b3b3;
-      border-right: 0;
-      border-bottom: 0;
-      border-radius: 6px 0 0 0;
-      padding: 0.28rem 0.5rem;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
       box-shadow: none;
+      white-space: nowrap;
     }
 
     .preview-panel {
       display: grid;
-      gap: 0;
-      padding: 0;
+      gap: 12px;
+      padding: 12px;
       width: 100%;
-      border: 1px solid #b3b3b3;
+      border: 1px solid #DEEDED;
       border-radius: 12px;
       background: white;
       overflow: hidden;
@@ -469,41 +528,99 @@
 
     .preview-top {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.5rem;
-      align-items: center;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
       width: 100%;
-      padding: 0.3rem 0.7rem;
+      padding: 0;
       border: 0;
       border-radius: 0;
       background: transparent;
     }
 
-    .preview-readout {
+    .preview-canvas-shell {
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .preview {
+      display: block;
+    }
+
+    .preview canvas {
+      width: 80px;
+      height: 80px;
+      border-radius: 6px;
+      background: rgb(0 0 0 / 18%);
+      display: block;
+    }
+
+    .preview-lines {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       justify-content: center;
-      gap: 0.2rem;
       min-width: 0;
     }
 
-    .metrics {
-      display: grid;
-      gap: 0.16rem;
-      color: rgb(48 64 72 / 72%);
-      font-size: 0.72rem;
+    .preview-line {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      width: 100%;
+      padding: 6px 0;
+      border: 0;
+      border-radius: 0;
+      color: rgb(48 64 72 / 58%);
+      font-size: 0.76rem;
       line-height: 1.05;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      letter-spacing: 0.03em;
       font-variant-numeric: tabular-nums;
       font-feature-settings: "tnum" 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .metric strong {
+    .preview-line--time {
+      display: grid;
+      grid-template-columns: max-content max-content;
+      justify-content: start;
+      align-items: end;
+      column-gap: 10px;
+    }
+
+    .preview-line strong {
       color: #114665;
       font-weight: 700;
       letter-spacing: 0.01em;
+    }
+
+    .coverage-readout {
+      display: inline-block;
+      color: rgb(48 64 72 / 56%);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      padding: 0;
+      position: relative;
+      top: -1px;
+    }
+
+    .coverage-readout.has-coverage {
+      color: #d28a56;
+    }
+
+    .metric-value {
+      color: #0F3B53;
+      font-weight: inherit;
+      letter-spacing: inherit;
     }
 
     .time-actions {
@@ -511,7 +628,8 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0;
       width: 100%;
-      border-top: 1px solid rgb(179 179 179 / 85%);
+      border-top: 1px solid #DEEDED;
+      padding-top: 8px;
     }
 
     .time-actions button {
@@ -521,7 +639,7 @@
       justify-content: center;
       gap: 0.28rem;
       border: 0;
-      border-right: 1px solid rgb(179 179 179 / 85%);
+      border-right: 1px solid #DEEDED;
       border-radius: 0;
       background: transparent;
       padding: 0.48rem 0.62rem;
@@ -538,19 +656,27 @@
       border-right: 0;
     }
 
+    .time-actions button:first-child {
+      border-bottom-left-radius: 6px;
+    }
+
+    .time-actions button:last-child {
+      border-bottom-right-radius: 6px;
+    }
+
     .time-actions button .btn-label {
       font-size: 0.66rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      opacity: 0.95;
-      color: rgb(48 64 72 / 78%);
+      opacity: 1;
+      color: rgb(48 64 72 / 58%);
       white-space: nowrap;
       font-weight: 600;
     }
 
     .time-actions button .btn-time {
       font-weight: 700;
-      color: #114665;
+      color: #0F3B53;
       font-size: 0.98rem;
       letter-spacing: 0.01em;
       white-space: nowrap;
@@ -639,7 +765,11 @@
       }
 
       .desktop-corner {
-        display: none;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: block;
       }
 
       .headline {
@@ -663,18 +793,10 @@
 
       .preview-top {
         width: 100%;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr);
         justify-items: start;
-        align-items: center;
-        padding: 0.4rem 0.7rem;
-      }
-
-      .preview {
-        width: auto;
-      }
-
-      .metrics {
-        font-size: 0.68rem;
+        align-items: stretch;
+        padding: 0;
       }
 
       .time-actions {
@@ -695,6 +817,12 @@
     <section class="panel">
       <h2 class="headline">Solformørkelse 2026</h2>
 
+      <div class="panel-header">
+        <p class="sub">Den 12. august 2026 kan du opleve en <a class="source-link" href="https://lex.dk/solform%C3%B8rkelsen_den_12._august_2026" target="_blank" rel="noopener">delvis solformørkelse i Danmark</a> mellem kl. 19 og 21, med op til 85 % dækning.</p>
+        <p class="sub">Udforsk kortet eller søg på din adresse herunder for at se, hvor du har frit udsyn til solformørkelsen - uden skygger fra omkringliggende bygninger og terræn.</p>
+        <p class="sub warning-text">Husk solformørkelsesbriller under hele formørkelsen</p>
+      </div>
+
       <div class="panel-tools">
         <div class="search-row">
           <div data-widget-detach="locateme" class="locateme"></div>
@@ -703,21 +831,23 @@
 
         <div class="preview-panel">
           <div class="preview-top">
-            <div class="preview-readout">
-              <div class="time-box" role="group" aria-label="Vælg tidspunkt">
-                <input id="time-hour" inputmode="numeric" maxlength="2" value="20" aria-label="Timer">
-                <span>:</span>
-                <input id="time-minute" inputmode="numeric" maxlength="2" value="00" aria-label="Minut">
-              </div>
-              <div class="metrics">
-                <div class="metric">Azimut: <strong id="ui-azimuth">--.- grader</strong></div>
-                <div class="metric">Højde: <strong id="ui-altitude">--.- grader</strong></div>
-                <div class="metric">Dækning: <strong id="ui-coverage">--.-%</strong></div>
+            <div class="preview-canvas-shell">
+              <div class="preview">
+                <canvas id="preview-canvas" width="200" height="200"></canvas>
               </div>
             </div>
 
-            <div class="preview">
-              <canvas id="preview-canvas" width="200" height="200"></canvas>
+            <div class="preview-lines">
+              <div class="preview-line preview-line--time">
+                <div class="time-box" role="group" aria-label="Vælg tidspunkt">
+                  <input id="time-hour" inputmode="numeric" maxlength="2" value="20" aria-label="Timer">
+                  <span>:</span>
+                  <input id="time-minute" inputmode="numeric" maxlength="2" value="00" aria-label="Minut">
+                </div>
+                <span id="ui-coverage" class="coverage-readout">0.0% daekning</span>
+              </div>
+              <div class="preview-line">Azimut: <span id="ui-azimuth" class="metric-value">--.- grader</span></div>
+              <div class="preview-line">Højde: <span id="ui-altitude" class="metric-value">--.- grader</span></div>
             </div>
           </div>
 
@@ -727,7 +857,8 @@
               <span id="btn-start-time" class="btn-time">--:--</span>
             </button>
             <button id="jump-noon" type="button">
-              <span class="btn-label">Maks (<span id="btn-peak-pct" class="btn-peak-pct">--.-%</span>)</span>
+              <!-- <span class="btn-label">Maksimal dækning (<span id="btn-peak-pct" class="btn-peak-pct">--.-%</span>)</span> -->
+               <span class="btn-label">Maksimal dækning</span>
               <span id="btn-peak-time" class="btn-time">--:--</span>
             </button>
             <button id="jump-sunset" type="button">
@@ -737,13 +868,6 @@
           </div>
         </div>
       </div>
-
-      <div class="panel-header">
-        <p class="sub">Den 12. august 2026 vil der i tidsrummet kl. 19 til 21 være delvis solformørkelse i hele Danmark. Afhængigt af hvor i landet man befinder sig, vil solen blive formørket 80-88 %. Formørkelsen topper kl. 20:04.</p>
-        <p class="sub">Tidspunktet betyder, at solen står lavt på himlen, og skyggerne bliver lange. Indtast din adresse og se hvor i dit nabolag, du har mulighed for at se solen.</p>
-        <p class="sub warning-text">Husk, at for at se solformørkelsen skal man bruge solformørkelsesbriller...</p>
-        <a class="source-link" href="https://lex.dk/solform%C3%B8rkelsen_den_12._august_2026" target="_blank" rel="noopener">Læs mere om solformørkelsen den 12. august 2026</a>
-      </div>
     </section>
 
     <section class="stage-card">
@@ -751,7 +875,9 @@
         <div class="map-frame-card">
           <div class="legend">
             <span class="dot day"></span><span>Dag</span>
+            <span class="legend-divider" aria-hidden="true"></span>
             <span class="dot night"></span><span>Nat</span>
+            <span class="legend-divider" aria-hidden="true"></span>
             <span class="dot eclipse"></span><span>Formørkelse</span>
           </div>
           <div id="stage" class="stage">
@@ -768,30 +894,43 @@
   </main>
 
   <div class="desktop-corner">
-    <div class="desktop-corner__logo-slot"></div>
+    <div class="desktop-corner__copyright"></div>
+    <div class="desktop-corner__logo-slot">
+      <img class="logo" src="assets/images/logo-color-black.png" alt="Septima" />
+    </div>
   </div>
 
-  <img class="logo" src="assets/images/logo-color-black.png" alt="Septima" />
-
   <script type="module">
-    const { default: SunCalc } = await import('https://cdn.skypack.dev/suncalc@1.8.0');
-    const { default: WidgetAPI } = await import('https://widget.cdn.septima.dk/latest/widgetapi.mjs');
-    const { renderEclipsePreview } = await import('./scripts/preview.js');
-    const [solarEclipseMod, catalogueMod, coreMod] = await Promise.all([
+    const [
+      widgetApiMod,
+      previewMod,
+      solarEclipseMod,
+      catalogueMod,
+      coreMod,
+      sunMod,
+    ] = await Promise.all([
+      import('https://widget.cdn.septima.dk/latest/widgetapi.mjs'),
+      import('./scripts/preview.js'),
       import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/solar-eclipse/+esm'),
       import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/solar-eclipse/catalogue/+esm'),
       import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/core/+esm'),
+      import('https://cdn.jsdelivr.net/npm/@astronomy-bundle/sun/+esm'),
     ]);
+
+    const { default: WidgetAPI } = widgetApiMod;
+    const { renderEclipsePreview } = previewMod;
 
     const { SolarEclipse } = solarEclipseMod;
     const { Catalogue } = catalogueMod;
-    const { Location } = coreMod;
+    const { Location, TimeOfInterest } = coreMod;
+    const { Sun } = sunMod;
 
     const mapConfigUrl = new URL('./config/map.json', document.baseURI).href;
     const widget = new WidgetAPI('.widgetmap2', mapConfigUrl);
 
     const TIME_ZONE = 'Europe/Copenhagen';
     const DATE_STR = '2026-08-12';
+    const DEFAULT_SELECTED_MINUTE = 20 * 60;
 
     function getCurrentLocalMinuteOfDay() {
       const now = new Date();
@@ -802,15 +941,14 @@
       lngLat: [12.539792090268461, 55.70698126629835],
       mapCenter25832: [724282.08, 6178621.15],
       mapZoom: 11,
-      selectedMinute: getCurrentLocalMinuteOfDay(),
+      selectedMinute: DEFAULT_SELECTED_MINUTE,
       solar: null,
       drag: false,
       hasLoadedInitialWms: false,
       hasBoundWmsLock: false,
-      wmsThrottleMs: 240,
-      lastWmsUpdateAt: 0,
+      wmsDebounceMs: 200,
       wmsTimer: null,
-      wmsLocked: false,
+      wmsLocks: new Set(),
       wmsPendingUpdate: false,
       wmsResizeTimer: null,
       coverageProbeCanvas: null,
@@ -825,7 +963,7 @@
       btnStartTime: document.getElementById('btn-start-time'),
       btnPeakTime: document.getElementById('btn-peak-time'),
       btnEndTime: document.getElementById('btn-end-time'),
-      btnPeakPct: document.getElementById('btn-peak-pct'),
+      // btnPeakPct: document.getElementById('btn-peak-pct'),
       azimuth: document.getElementById('ui-azimuth'),
       altitude: document.getElementById('ui-altitude'),
       coverage: document.getElementById('ui-coverage'),
@@ -833,8 +971,6 @@
       stage: document.getElementById('stage'),
       preview: document.getElementById('preview-canvas'),
     };
-
-    const deg = (rad) => rad * 180 / Math.PI;
 
     function clamp(value, min, max) {
       return Math.min(max, Math.max(min, value));
@@ -870,11 +1006,49 @@
       return h * 60 + m;
     }
 
-    function minuteToDate(minuteOfDay) {
-      const [h, m] = [Math.floor(minuteOfDay / 60), minuteOfDay % 60];
-      const d = new Date(`${DATE_STR}T00:00:00`);
-      d.setHours(h, m, 0, 0);
-      return d;
+    function parseIsoDateParts(dateString) {
+      const match = String(dateString || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return null;
+
+      return {
+        year: Number.parseInt(match[1], 10),
+        month: Number.parseInt(match[2], 10),
+        day: Number.parseInt(match[3], 10),
+      };
+    }
+
+    function getTimeOfInterestForLocalMinute(minuteOfDay) {
+      const clock = localMinutesToClock(minuteOfDay);
+      const localMoment = zonedTimeToDate(DATE_STR, `${clock}:00`, TIME_ZONE);
+      if (!localMoment) return null;
+
+      return TimeOfInterest.fromTime(
+        localMoment.getUTCFullYear(),
+        localMoment.getUTCMonth() + 1,
+        localMoment.getUTCDate(),
+        localMoment.getUTCHours(),
+        localMoment.getUTCMinutes(),
+        localMoment.getUTCSeconds(),
+      );
+    }
+
+    function getSunHorizontalAtMinute(minuteOfDay, observerLocation) {
+      const toi = getTimeOfInterestForLocalMinute(minuteOfDay);
+      if (!toi) return null;
+
+      const sun = Sun.create(toi);
+      const coordinates = sun.getRefractionCorrectedTopocentricHorizontalCoordinates(observerLocation);
+      if (!coordinates) return null;
+
+      const azimuth = Number(coordinates.azimuth);
+      const altitude = Number(coordinates.altitude);
+
+      if (!Number.isFinite(azimuth) || !Number.isFinite(altitude)) return null;
+
+      return {
+        azNorth: normAngle(azimuth),
+        altitude,
+      };
     }
 
     function timeOfInterestToDate(toi) {
@@ -986,24 +1160,41 @@
 
     function computeSolarData() {
       const [lng, lat] = state.lngLat;
-      const date = new Date(`${DATE_STR}T00:00:00`);
-      const times = SunCalc.getTimes(date, lat, lng);
+      const dateParts = parseIsoDateParts(DATE_STR);
+      if (!dateParts) return null;
 
-      if (!times.sunrise || !times.sunset || Number.isNaN(times.sunrise.getTime()) || Number.isNaN(times.sunset.getTime())) {
+      const observerLocation = Location.create(lat, lng, 0);
+      const middayToi = TimeOfInterest.fromTime(dateParts.year, dateParts.month, dateParts.day, 12, 0, 0);
+      const sun = Sun.create(middayToi);
+
+      const sunriseDate = timeOfInterestToDate(sun.getApparentRise(observerLocation));
+      const sunsetDate = timeOfInterestToDate(sun.getApparentSet(observerLocation));
+      const transitDate = timeOfInterestToDate(sun.getTransit(observerLocation));
+
+      const sunriseMin = dateToZoneMinutes(sunriseDate, TIME_ZONE);
+      const sunsetMin = dateToZoneMinutes(sunsetDate, TIME_ZONE);
+      const noonMinRaw = dateToZoneMinutes(transitDate, TIME_ZONE);
+
+      if (!Number.isFinite(sunriseMin) || !Number.isFinite(sunsetMin)) {
         return null;
       }
 
-      const sunriseMin = (times.sunrise.getHours() * 60) + times.sunrise.getMinutes();
-      const sunsetMin = (times.sunset.getHours() * 60) + times.sunset.getMinutes();
-      const noonMin = (times.solarNoon.getHours() * 60) + times.solarNoon.getMinutes();
+      const noonMin = Number.isFinite(noonMinRaw)
+        ? noonMinRaw
+        : Math.round((sunriseMin + sunsetMin) / 2);
 
       const samples = [];
       for (let m = sunriseMin; m <= sunsetMin; m += 1) {
-        const t = minuteToDate(m);
-        const pos = SunCalc.getPosition(t, lat, lng);
-        const azNorth = normAngle(deg(pos.azimuth) + 180);
-        samples.push({ minute: m, azNorth, altitude: deg(pos.altitude) });
+        const position = getSunHorizontalAtMinute(m, observerLocation);
+        if (!position) continue;
+        samples.push({
+          minute: m,
+          azNorth: position.azNorth,
+          altitude: position.altitude,
+        });
       }
+
+      if (!samples.length) return null;
 
       const sunriseAz = samples[0]?.azNorth ?? 0;
       const sunsetAz = samples[samples.length - 1]?.azNorth ?? 0;
@@ -1182,10 +1373,10 @@
       const leftTriangle = buildArrowTriangle(ccwTipX, ccwTipY, -perpendicularX, -perpendicularY);
 
       const [lng, lat] = state.lngLat;
+      const observerLocation = Location.create(lat, lng, 0);
       const azimuthForMinute = (minuteOfDay) => {
-        const t = minuteToDate(minuteOfDay);
-        const position = SunCalc.getPosition(t, lat, lng);
-        return normAngle(deg(position.azimuth) + 180);
+        const position = getSunHorizontalAtMinute(minuteOfDay, observerLocation);
+        return position ? position.azNorth : 0;
       };
 
       const tickStrokeBase = isMobileLayout ? 1.4 : 1.6;
@@ -1274,7 +1465,9 @@
 
       ui.azimuth.textContent = `${sample.azNorth.toFixed(1)} grader`;
       ui.altitude.textContent = `${sample.altitude.toFixed(1)} grader`;
-      ui.coverage.textContent = `${(((preview?.exactCoverage ?? preview?.coverage) || 0) * 100).toFixed(1)}%`;
+      const coveragePercent = (((preview?.exactCoverage ?? preview?.coverage) || 0) * 100);
+      ui.coverage.textContent = `${coveragePercent.toFixed(1)}% daekning`;
+      ui.coverage.classList.toggle('has-coverage', coveragePercent > 0);
     }
 
     function estimateCoverageAtMinute(minute) {
@@ -1306,12 +1499,12 @@
       ui.btnPeakTime.textContent = localMinutesToClock(peakMinute);
       ui.btnEndTime.textContent = localMinutesToClock(endMinute);
 
-      const peakCoverage = estimateCoverageAtMinute(peakMinute);
-      ui.btnPeakPct.textContent = peakCoverage == null ? '--.-%' : `${(peakCoverage * 100).toFixed(1)}%`;
+      // const peakCoverage = estimateCoverageAtMinute(peakMinute);
+      // ui.btnPeakPct.textContent = peakCoverage == null ? '--.-%' : `${(peakCoverage * 100).toFixed(1)}%`;
     }
 
     function updateMapLayerTime() {
-      if (state.wmsLocked) {
+      if (state.wmsLocks.size > 0) {
         state.wmsPendingUpdate = true;
         return;
       }
@@ -1319,12 +1512,11 @@
       const value = buildMapTimeParam(state.selectedMinute);
       if (!value) return;
       widget.updateLayerParams('skygge-kort', { TIME: value });
-      state.lastWmsUpdateAt = Date.now();
       state.wmsPendingUpdate = false;
     }
 
     function scheduleMapLayerTimeUpdate(force = false) {
-      if (state.wmsLocked) {
+      if (state.wmsLocks.size > 0) {
         state.wmsPendingUpdate = true;
         return;
       }
@@ -1338,20 +1530,14 @@
         return;
       }
 
-      const now = Date.now();
-      const elapsed = now - state.lastWmsUpdateAt;
-
-      if (elapsed >= state.wmsThrottleMs) {
-        updateMapLayerTime();
-        return;
+      if (state.wmsTimer) {
+        window.clearTimeout(state.wmsTimer);
       }
-
-      if (state.wmsTimer) return;
 
       state.wmsTimer = window.setTimeout(() => {
         state.wmsTimer = null;
         updateMapLayerTime();
-      }, state.wmsThrottleMs - elapsed);
+      }, state.wmsDebounceMs);
     }
 
     function getOlMap() {
@@ -1379,11 +1565,19 @@
       layer.setVisible(visible);
     }
 
-    function setWmsLocked(locked) {
-      if (state.wmsLocked === locked) return;
-      state.wmsLocked = locked;
+    function setWmsLock(lockName, locked) {
+      const wasLocked = state.wmsLocks.size > 0;
 
       if (locked) {
+        state.wmsLocks.add(lockName);
+      } else {
+        state.wmsLocks.delete(lockName);
+      }
+
+      const isLocked = state.wmsLocks.size > 0;
+      if (wasLocked === isLocked) return;
+
+      if (isLocked) {
         if (state.wmsTimer) {
           window.clearTimeout(state.wmsTimer);
           state.wmsTimer = null;
@@ -1395,7 +1589,7 @@
       setWmsLayerVisible(true);
 
       if (state.wmsPendingUpdate) {
-        updateMapLayerTime();
+        scheduleMapLayerTimeUpdate(true);
       }
     }
 
@@ -1405,11 +1599,11 @@
       const map = getOlMap();
       if (!map || typeof map.on !== 'function') return;
 
-      map.on('movestart', () => setWmsLocked(true));
-      map.on('moveend', () => setWmsLocked(false));
+      map.on('movestart', () => setWmsLock('map', true));
+      map.on('moveend', () => setWmsLock('map', false));
 
       const lockOnResize = () => {
-        setWmsLocked(true);
+        setWmsLock('resize', true);
 
         if (state.wmsResizeTimer) {
           window.clearTimeout(state.wmsResizeTimer);
@@ -1417,7 +1611,7 @@
 
         state.wmsResizeTimer = window.setTimeout(() => {
           state.wmsResizeTimer = null;
-          setWmsLocked(false);
+          setWmsLock('resize', false);
         }, 220);
       };
 
@@ -1481,6 +1675,7 @@
         if (!isRingHit) return;
 
         state.drag = true;
+        setWmsLock('drag', true);
         ui.ring.classList.add('dragging');
         ui.ring.setPointerCapture(event.pointerId);
         onRingPointerMove(event);
@@ -1491,6 +1686,7 @@
       const finish = (event) => {
         if (!state.drag) return;
         state.drag = false;
+        setWmsLock('drag', false);
         ui.ring.classList.remove('dragging');
         scheduleMapLayerTimeUpdate(true);
         if (event.pointerId !== undefined && ui.ring.hasPointerCapture(event.pointerId)) {
@@ -1641,7 +1837,6 @@
       moveSupportBranding();
       applyMobileMapDpiMode();
       updateTimeInputs(state.selectedMinute);
-      window.addEventListener('load', applyMobileMapDpiMode);
       window.addEventListener('resize', moveSupportBranding);
       window.addEventListener('resize', applyMobileMapDpiMode);
       window.addEventListener('orientationchange', applyMobileMapDpiMode);
