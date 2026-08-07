@@ -17,6 +17,10 @@
   <link rel="preconnect" href="https://p.typekit.net" crossorigin>
   <link rel="stylesheet" href="https://use.typekit.net/dqr0gee.css">
   <title>Solformørkelse 2026</title>
+  <meta name="description" content="Se den delvise solformørkelse i Danmark den 12. august 2026. Beregn præcise tidspunkter, dækningsgrad og lokale forhold med vores interaktive kort." />
+  <meta property="og:description" content="Find det perfekte sted at opleve den delvise solformørkelse den 12. august 2026. Indtast din adresse og se præcise tidspunkter, dækningsgrad og det bedste udsyn på vores interaktive kort." />
+  <meta property="og:image" content="https://septima.dk/solformoerkelse-2026/assets/images/og-image-solformoerkelse.png" />
+  <meta property="og:url" content="https://septima.dk/solformoerkelse-2026/" />
   <style>
     :root {
       --bg: #eef3ef;
@@ -514,7 +518,7 @@
     .legend {
       position: relative;
       z-index: 5;
-      display: inline-flex;
+      display: flex;
       flex-wrap: nowrap;
       gap: 0.45rem;
       align-items: center;
@@ -530,8 +534,46 @@
       white-space: nowrap;
       max-width: calc(100% - 1rem);
       width: fit-content;
+    }
+
+    .zoom-warning {
+      position: absolute;
+      top: 2.55rem;
       left: 50%;
       transform: translateX(-50%);
+      z-index: 6;
+      display: flex;
+      align-items: baseline;
+      gap: 0.2rem;
+      border-radius: 6px;
+      border: 1px solid #e8d8b4;
+      background: #fff9eb;
+      color: #5a4a2b;
+      padding: 0.28rem 0.55rem;
+      font-size: 0.76rem;
+      margin: 0;
+      white-space: nowrap;
+      max-width: calc(100% - 1rem);
+      width: fit-content;
+    }
+
+    .zoom-warning[hidden] {
+      display: none !important;
+    }
+
+    .zoom-warning__zoom-in {
+      appearance: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      color: #0f3b53;
+      font: inherit;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 0.12em;
+      cursor: pointer;
+      line-height: inherit;
     }
 
     .legend-divider {
@@ -839,6 +881,12 @@
         max-width: calc(100% - 0.7rem);
       }
 
+      .zoom-warning {
+        top: 2.2rem;
+        font-size: 0.68rem;
+        max-width: calc(100% - 0.7rem);
+      }
+
       .map-copyright-slot .widget-map-copyright {
         white-space: normal;
         text-align: center;
@@ -1103,6 +1151,15 @@
         margin: 0 auto 0.6rem;
       }
 
+      .zoom-warning {
+        top: 3.6rem;
+        border-radius: 8px;
+        border-width: 1.5px;
+        font-size: 1.08rem;
+        padding: 0.4rem 0.85rem;
+        margin: 0;
+      }
+
       .legend-divider {
         height: 1.8em;
         border-left: 1.5px solid #DEEDED;
@@ -1182,7 +1239,7 @@
 
       <div class="panel-header">
         <p class="sub">Den 12. august 2026 kan du opleve en <a class="source-link" href="https://lex.dk/solform%C3%B8rkelsen_den_12._august_2026" target="_blank" rel="noopener">delvis solformørkelse i Danmark</a> mellem kl. 19 og 21, med op til 85 % dækning.</p>
-        <p class="sub">Udforsk kortet eller søg på din adresse herunder for at se, hvor du har frit udsyn til solformørkelsen - uden <a class="source-link" href="https://septima.dk/nyheder/nyhed-skyggekort-labs" target="_blank" rel="noopener">skygger fra omkringliggende bygninger og terræn</a>.</p>
+        <p class="sub">Søg på din adresse herunder for at se, hvor du har frit udsyn til solformørkelsen - uden <a class="source-link" href="https://septima.dk/nyheder/nyhed-skyggekort-labs" target="_blank" rel="noopener">skygger fra omkringliggende bygninger og terræn</a>. Du kan trække og zoome i kort.</p>
         <p class="sub warning-text">Husk solformørkelsesbriller under hele formørkelsen</p>
       </div>
 
@@ -1243,6 +1300,10 @@
             <span class="legend-divider" aria-hidden="true"></span>
             <span class="dot eclipse"></span><span>Formørkelse</span>
           </div>
+          <div id="zoom-warning" class="zoom-warning" hidden>
+            <span>Skygger ikke synlige,</span>
+            <button id="zoom-warning-zoom-in" class="zoom-warning__zoom-in" type="button">zoom ind</button>
+          </div>
           <div id="stage" class="stage">
             <div class="map-cutout">
               <div class="widgetmap2"></div>
@@ -1296,6 +1357,7 @@
     const TIME_ZONE = 'Europe/Copenhagen';
     const DATE_STR = '2026-08-12';
     const DEFAULT_SELECTED_SECOND = 20 * 60 * 60;
+    const MIN_VISIBLE_SHADOW_ZOOM = 10.68;
     const COVERAGE_DISPLAY_ZERO_EPSILON = 0.0005;
     const END_TIME_SEARCH_MAX_MINUTES = 120;
     const SAMPLE_STEP_SECONDS = 60;
@@ -1338,7 +1400,24 @@
       ring: document.getElementById('ring-svg'),
       stage: document.getElementById('stage'),
       preview: document.getElementById('preview-canvas'),
+      zoomWarning: document.getElementById('zoom-warning'),
+      zoomWarningZoomIn: document.getElementById('zoom-warning-zoom-in'),
     };
+
+    function updateZoomWarningVisibility() {
+      console.log(state.mapZoom, 'state.mapZoom')
+      if (!ui.zoomWarning) return;
+      const shouldShowWarning = Number.isFinite(state.mapZoom) && state.mapZoom < MIN_VISIBLE_SHADOW_ZOOM;
+      ui.zoomWarning.hidden = !shouldShowWarning;
+    }
+
+    function zoomToShadowVisibilityLevel() {
+      widget.setView({
+        zoom: MIN_VISIBLE_SHADOW_ZOOM,
+        x: state.mapCenter25832[0],
+        y: state.mapCenter25832[1],
+      });
+    }
 
     function clamp(value, min, max) {
       return Math.min(max, Math.max(min, value));
@@ -2314,11 +2393,16 @@
         applyMobileMapDpiMode();
 
         const hashView = parseMapHash();
+        if (hashView && Number.isFinite(hashView.zoomLevel)) {
+          state.mapZoom = hashView.zoomLevel;
+        }
         widget.setView(hashView ?? {
           zoomLevel: state.mapZoom,
           x: state.mapCenter25832[0],
           y: state.mapCenter25832[1],
         });
+
+        updateZoomWarningVisibility();
 
         state.lngLat = await centerToLngLat(state.mapCenter25832);
         refreshSolarAndRender(true);
@@ -2334,6 +2418,11 @@
       widget.on('mapmove', async (_eventname, _scope, mapstate) => {
         applyMobileMapDpiMode();
         state.mapCenter25832 = mapstate.center;
+        const mapZoom = Number(mapstate.zoom);
+        if (Number.isFinite(mapZoom)) {
+          state.mapZoom = mapZoom;
+        }
+        updateZoomWarningVisibility();
 
         state.lngLat = await centerToLngLat(mapstate.center);
         refreshSolarAndRender(true);
@@ -2372,9 +2461,14 @@
       moveSupportBranding();
       applyMobileMapDpiMode();
       updateTimeInputs(state.selectedSecond);
+      updateZoomWarningVisibility();
       window.addEventListener('resize', moveSupportBranding);
       window.addEventListener('resize', applyMobileMapDpiMode);
       window.addEventListener('orientationchange', applyMobileMapDpiMode);
+
+      if (ui.zoomWarningZoomIn) {
+        ui.zoomWarningZoomIn.addEventListener('click', zoomToShadowVisibilityLevel);
+      }
 
       bindRingPointer();
       bindTimeInputs();
