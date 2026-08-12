@@ -1354,17 +1354,7 @@
     const { Sun } = sunMod;
 
     const mapConfigUrl = new URL('./config/map.json', document.baseURI).href;
-    const initialHashView = parseMapHash();
-    const mapConfig = await fetch(mapConfigUrl).then((res) => res.json());
-    if (initialHashView) {
-      mapConfig.map.view = {
-        ...mapConfig.map.view,
-        zoomLevel: initialHashView.zoomLevel,
-        x: initialHashView.x,
-        y: initialHashView.y,
-      };
-    }
-    const widget = new WidgetAPI('.widgetmap2', mapConfig);
+    const widget = new WidgetAPI('.widgetmap2', mapConfigUrl);
 
     const TIME_ZONE = 'Europe/Copenhagen';
     const DATE_STR = '2026-08-12';
@@ -1381,8 +1371,8 @@
 
     const state = {
       lngLat: [12.539792090268461, 55.70698126629835],
-      mapCenter25832: initialHashView ? [initialHashView.x, initialHashView.y] : [724282.08, 6178621.15],
-      mapZoom: initialHashView ? initialHashView.zoomLevel : 11,
+      mapCenter25832: [724282.08, 6178621.15],
+      mapZoom: 11,
       selectedSecond: DEFAULT_SELECTED_SECOND,
       solar: null,
       drag: false,
@@ -2461,11 +2451,18 @@
       widget.on('ready', async () => {
         applyMobileMapDpiMode();
 
-        writeMapHash({
+        const hashView = parseMapHash();
+        const initialView = hashView ?? {
           zoomLevel: state.mapZoom,
           x: state.mapCenter25832[0],
           y: state.mapCenter25832[1],
-        });
+        };
+
+        if (hashView && Number.isFinite(hashView.zoomLevel)) {
+          state.mapZoom = hashView.zoomLevel;
+        }
+        widget.setView(initialView);
+        writeMapHash(initialView);
 
         updateZoomWarningVisibility();
 
