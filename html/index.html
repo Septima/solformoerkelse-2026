@@ -46,6 +46,9 @@
       --tablet-portrait-map-dpi-scale-inv: 1.3889;
       --mobile-map-dpi-scale: 0.46;
       --mobile-map-dpi-scale-inv: 2.1739;
+      --map-widget-mobile: 1200px;
+      --map-widget-tablet-portrait: 800px;
+      --map-widget-desktop: 1200px;
       --control-height: 3rem;
       --surface-border: rgb(16 36 49 / 10%);
       --surface-bg-top: #f7fbfd;
@@ -426,7 +429,11 @@
 
     .widgetmap2 {
       position: absolute;
-      inset: 0;
+      top: 50%;
+      left: 50%;
+      width: var(--map-widget-desktop);
+      height: var(--map-widget-desktop);
+      transform: translate(-50%, -50%);
     }
 
     .map-crosshair {
@@ -455,8 +462,8 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: calc(100% * var(--mobile-map-dpi-scale-inv));
-      height: calc(100% * var(--mobile-map-dpi-scale-inv));
+      width: var(--map-widget-mobile);
+      height: var(--map-widget-mobile);
       transform: translate(-50%, -50%) scale(var(--mobile-map-dpi-scale));
       transform-origin: center center;
     }
@@ -465,8 +472,8 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: calc(100% * var(--desktop-map-dpi-scale-inv));
-      height: calc(100% * var(--desktop-map-dpi-scale-inv));
+      width: var(--map-widget-desktop);
+      height: var(--map-widget-desktop);
       transform: translate(-50%, -50%) scale(var(--desktop-map-dpi-scale));
       transform-origin: center center;
     }
@@ -475,8 +482,8 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: calc(100% * var(--tablet-portrait-map-dpi-scale-inv));
-      height: calc(100% * var(--tablet-portrait-map-dpi-scale-inv));
+      width: var(--map-widget-tablet-portrait);
+      height: var(--map-widget-tablet-portrait);
       transform: translate(-50%, -50%) scale(var(--tablet-portrait-map-dpi-scale));
       transform-origin: center center;
     }
@@ -959,6 +966,7 @@
       :root {
         --desktop-map-dpi-scale: 0.74;
         --desktop-map-dpi-scale-inv: 1.3514;
+        --map-widget-desktop: 1800px;
         --sw-font-size-default: 24px;
         --sw-border-radius: 16px;
       }
